@@ -3,7 +3,7 @@
 #include <string.h>
 #include "tsp.h"
 
-short parse_tsp_file(const char* filename, instance *inst) {
+int parse_tsp_file(const char* filename, instance *inst) {
     FILE* file = fopen(filename, "r");
     if (!file) {
         perror("Error opening file");

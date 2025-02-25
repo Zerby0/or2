@@ -20,7 +20,7 @@ int main(int argc, char *argv[]) {
         printf("No arguments received.\n");
     }
     instance inst;
-    if (parse_tsp_file("data/rat99.tsp", &inst) == -1) return 0;
+    if (parse_tsp_file("data/rat99.tsp", &inst) == -1) return 1;
     printf("Data collected\n");
     plot_instance(&inst);
     printf("Data plotted\n");
