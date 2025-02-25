@@ -20,8 +20,9 @@ int main(int argc, char *argv[]) {
         printf("No arguments received.\n");
     }
     instance inst;
-    parse_tsp_file("data/rat99.tsp", &inst);
-    printf("Coordinate x of the first one %d\n", inst.x_coords[0]);
-    printf("Coordinate y of the first one %d\n", inst.y_coords[0]);
+    if (parse_tsp_file("data/rat99.tsp", &inst) == -1) return 0;
+    printf("Data collected\n");
+    plot_instance(&inst);
+    printf("Data plotted\n");
     return 0;
 }

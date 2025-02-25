@@ -10,7 +10,8 @@ typedef struct{
 } instance;
 
 
-void parse_tsp_file(const char* filename, instance *inst); 
+short parse_tsp_file(const char* filename, instance *inst); 
+void plot_instance(instance* inst);
 
 
 #endif // TSP_H
