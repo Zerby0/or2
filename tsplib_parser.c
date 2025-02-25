@@ -12,14 +12,14 @@ short parse_tsp_file(const char* filename, instance *inst) {
 
     char line[256];
     short header = 1;
-    char* weight_type;
+    char weight_type[256];
     while (fgets(line, sizeof(line), file)) {
         if (header) {
             if (sscanf(line, "DIMENSION : %d", &inst->num_nodes) == 1) {
                 inst->x_coords = (int*) malloc(inst->num_nodes * sizeof(int));
                 inst->y_coords = (int*) malloc(inst->num_nodes * sizeof(int));
             }
-            else if (sscanf(line, "EDGE_WEIGHT_TYPE : %s", weight_type) == 1) {
+            else if (sscanf(line, "EDGE_WEIGHT_TYPE : %255s", weight_type) == 1) {
                 if (strcmp(weight_type, "EUC_2D") != 0) {
                     fprintf(stderr, "Error: EDGE_WEIGHT_TYPE is not EUC_2D\n");
                     return -1;
