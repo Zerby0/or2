@@ -16,8 +16,9 @@ int parse_tsp_file(const char* filename, instance *inst) {
     while (fgets(line, sizeof(line), file)) {
         if (header) {
             if (sscanf(line, "DIMENSION : %d", &inst->num_nodes) == 1) {
-                inst->x_coords = (int*) malloc(inst->num_nodes * sizeof(int));
-                inst->y_coords = (int*) malloc(inst->num_nodes * sizeof(int));
+                inst->x_coords = (double*) malloc(inst->num_nodes * sizeof(double));
+                inst->y_coords = (double*) malloc(inst->num_nodes * sizeof(double));
+                inst->connections = (int*) malloc((inst->num_nodes + 1) * sizeof(int));
             }
             else if (sscanf(line, "EDGE_WEIGHT_TYPE : %255s", weight_type) == 1) {
                 if (strcmp(weight_type, "EUC_2D") != 0) {
@@ -34,8 +35,9 @@ int parse_tsp_file(const char* filename, instance *inst) {
             }
         }
         else {
-            int i, x, y;
-            if (sscanf(line, "%d %d %d", &i, &x, &y) == 3) {
+            double x, y;
+            int i;
+            if (sscanf(line, "%d %lf %lf", &i, &x, &y) == 3) {
                 inst->x_coords[i-1] = x;
                 inst->y_coords[i-1] = y;
             } 

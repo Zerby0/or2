@@ -17,8 +17,8 @@
 })
 
 int plot_instance(instance* inst) {
-    int min_x = inst->x_coords[0], max_x = inst->x_coords[0];
-	int min_y = inst->y_coords[0], max_y = inst->y_coords[0];
+    double min_x = inst->x_coords[0], max_x = inst->x_coords[0];
+	double min_y = inst->y_coords[0], max_y = inst->y_coords[0];
     for (int i = 0; i < inst->num_nodes; i++) {
 		min_x = min(min_x, inst->x_coords[i]);
 		max_x = max(max_x, inst->x_coords[i]);
@@ -35,16 +35,26 @@ int plot_instance(instance* inst) {
 	fprintf(pipe, "set xlabel 'X'\n");
 	fprintf(pipe, "set ylabel 'Y'\n");
 	fprintf(pipe, "set grid\n");
-    const short GAP = 3;
-	fprintf(pipe, "set xrange [%d:%d+%d]\n", min_x, max_x, GAP);
-	fprintf(pipe, "set yrange [%d:%d+%d]\n", min_y, max_y, GAP);
+    const double GAP = 3;
+	fprintf(pipe, "set xrange [%f:%f+%f]\n", min_x, max_x, GAP);
+	fprintf(pipe, "set yrange [%f:%f+%f]\n", min_y, max_y, GAP);
 
-	// Plot dei punti con le coordinate dalla struttura
-	fprintf(pipe, "plot '-' with points pointtype 7 pointsize 1.5 lc rgb 'blue' title 'Nodi'\n");
+	// Plot points with coordinates arrays
+	fprintf(pipe, "plot '-' with points pointtype 7 pointsize 1.5 lc rgb 'blue' title 'Nodes', '-' with lines lc rgb 'red' title 'Connections'\n");
 	for (int i = 0; i < inst->num_nodes; i++) {
-		fprintf(pipe, "%d %d\n", inst->x_coords[i], inst->y_coords[i]);
+		fprintf(pipe, "%f %f\n", inst->x_coords[i], inst->y_coords[i]);
 	}
 	fprintf(pipe, "e\n");
+
+	// Plot the connections
+    for (int i = 0; i < inst->num_nodes; i++) {
+        int idx1 = inst->connections[i];
+        int idx2 = inst->connections[(i + 1) % inst->num_nodes]; 
+		fprintf(pipe, "%f %f\n", inst->x_coords[idx1], inst->y_coords[idx1]);
+        fprintf(pipe, "%f %f\n", inst->x_coords[idx2], inst->y_coords[idx2]);
+        fprintf(pipe, "\n"); 
+    }
+    fprintf(pipe, "e\n");
 
 	fflush(pipe);
 	pclose(pipe);
