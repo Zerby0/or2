@@ -4,6 +4,10 @@
 #include "tsp.h"
 
 int parse_tsp_file(const char* filename, instance *inst) {
+    if (!filename) {
+        fprintf(stderr, "Error: filename is NULL\n");
+        return -1;
+    }
     FILE* file = fopen(filename, "r");
     if (!file) {
         perror("Error opening file");

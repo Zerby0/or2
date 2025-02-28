@@ -8,6 +8,8 @@ typedef struct{
     int seed;            // Seed for random number generation
     double time_limit;   // Time limit for solving the problem
     int* connections;    // Array for the connections
+    char* file;          // File name
+
 } instance;
 
 
