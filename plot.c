@@ -16,7 +16,7 @@
     _a < _b ? _a : _b;       \
 })
 
-int plot_instance(instance* inst) {
+int plot_instance(instance* inst) {			// we need to also pass the solution for plotting all the variables solution (example for debugging)
     double min_x = inst->x_coords[0], max_x = inst->x_coords[0];
 	double min_y = inst->y_coords[0], max_y = inst->y_coords[0];
     for (int i = 0; i < inst->num_nodes; i++) {
@@ -26,7 +26,7 @@ int plot_instance(instance* inst) {
 		max_y = max(max_y, inst->y_coords[i]);
     }
 
-    FILE* pipe = popen("gnuplot -persistent", "w");
+    FILE* pipe = popen("gnuplot -persistent", "w");  //file pipe is a pointer to a file stream, faster than a file
 	if (!pipe) {
 		fprintf(stderr, "Error opening pipe to gnuplot\n");
 		return -1;

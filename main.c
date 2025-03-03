@@ -17,7 +17,7 @@ void parse_arguments(int argc, char *argv[], instance *inst) {
 
 int main(int argc, char *argv[]) {
     instance inst;
-    clock_t t1,t2;
+    clock_t t1,t2; // we must use the world time instead of the cpu time because if the cpu is busy the time will be slower (or parallelize the code)
     double time;
     t1 = clock();
     if (argc > 1) {
@@ -26,7 +26,7 @@ int main(int argc, char *argv[]) {
         if (parse_tsp_file(inst.file, &inst) == -1) return 1;
     }
     else {
-        printf("No arguments received.\n");
+        printf("No arguments received.\nDefault values will be used.\n");
         if (parse_tsp_file("data/d198.tsp", &inst) == -1) return 1;
     }
     printf("Data collected\n");
@@ -37,5 +37,7 @@ int main(int argc, char *argv[]) {
     t2 = clock();
     time = (double)(t2 - t1) / CLOCKS_PER_SEC;
     printf("Time: %fs\n", time);
+    int rand0_1 = (rand() + 0.0)/RAND_MAX; //random number between 0 and 1
+    printf("Random number: %d\n", rand0_1); 
     return 0;
 }
