@@ -48,8 +48,8 @@ int plot_instance(instance* inst) {			// we need to also pass the solution for p
 
 	// Plot the connections
     for (int i = 0; i < inst->num_nodes; i++) {
-        int idx1 = inst->connections[i];
-        int idx2 = inst->connections[(i + 1) % inst->num_nodes]; 
+        int idx1 = inst->sol[i];
+        int idx2 = inst->sol[(i + 1) % inst->num_nodes]; 
 		fprintf(pipe, "%f %f\n", inst->x_coords[idx1], inst->y_coords[idx1]);
         fprintf(pipe, "%f %f\n", inst->x_coords[idx2], inst->y_coords[idx2]);
         fprintf(pipe, "\n"); 

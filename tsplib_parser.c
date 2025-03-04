@@ -22,10 +22,10 @@ int parse_tsp_file(const char* filename, instance *inst) {
             if (sscanf(line, "DIMENSION : %d", &inst->num_nodes) == 1) {
                 inst->x_coords = (double*) malloc(inst->num_nodes * sizeof(double));  //alternative to calloc (everything is set to 0)
                 inst->y_coords = (double*) malloc(inst->num_nodes * sizeof(double));
-                inst->connections = (int*) malloc((inst->num_nodes + 1) * sizeof(int));
+                inst->sol = (int*) malloc((inst->num_nodes + 1) * sizeof(int));
                 //I can make an if() to check if the malloc was successful
             }
-            else if (sscanf(line, "EDGE_WEIGHT_TYPE : %255s", weight_type) == 1) {
+            else if (sscanf(line, "EDGE_WEIGHT_TYPE : %255s", weight_type) == 1) { 
                 if (strcmp(weight_type, "EUC_2D") != 0) {
                     fprintf(stderr, "Error: EDGE_WEIGHT_TYPE is not EUC_2D\n");
                     return -1;

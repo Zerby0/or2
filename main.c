@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
         if (parse_tsp_file("data/d198.tsp", &inst) == -1) return 1;
     }
     printf("Data collected\n");
-    fill_connections(&inst);
+    basic_sol(&inst);
     printf("Connections filled\n");
     plot_instance(&inst);
     printf("Data plotted\n");
@@ -41,3 +41,16 @@ int main(int argc, char *argv[]) {
     printf("Random number: %d\n", rand0_1); 
     return 0;
 }
+
+//First thing to implement: check feasibility of a solution using a counter array
+/*Have to check if a permutation of 1 to n is in the array sol 
+    - check if 0 <= sol[h] <= n-1 (very like to not appear)
+    - if the first is satisfied we increased a counter ++count[sol[h]]
+    - using check.sol(sol,cost,inst)
+    - check if the cost is correct (re calculate the cost of the solution) -> if cost int require ==, but if double require a range of values (epsilon defined in 
+    the header file)
+    
+Another function that we hae to implement is the update_best_sol(sol, cost, inst) (adding a parameter best_sol):
+    - whenever you have a new sol, check if is feasible, check if the cost is better than the previous one (better), then copy the new solution in best_sol
+    
+Adding a double best_value which is the cost of the best sol at time t*/
