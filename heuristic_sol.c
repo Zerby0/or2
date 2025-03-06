@@ -1,17 +1,13 @@
 #include "tsp.h"
-#include <stdio.h>
+#include <math.h>
+#include <stdbool.h>
+#include <memory.h>
+#include <stdlib.h>
 
-double cost(int i, int j, instance* inst) {
-    return sqrt((inst->x_coords[i] - inst->x_coords[j]) * (inst->x_coords[i] - inst->x_coords[j]) + (inst->y_coords[i] - inst->y_coords[j]) * (inst->y_coords[i] - inst->y_coords[j]));
-}
-//cost function (distance from node to node)
+/*  idea: Lesson 4/03/2025
 
-double nearest_neighbor(){    //Greedy algorithm error of 10% of the optimal solution
+	nearest neighbor
 
-    return 0;
-    }
-//idea: Lesson 4/03/2025
-/*  TODO: nearest neighbor
     you have a set of cities, start from a given city
     find the *nearest* city to the current city
     add the city to the tour
@@ -33,9 +29,35 @@ double nearest_neighbor(){    //Greedy algorithm error of 10% of the optimal sol
     time limit: we can have t_start = world clock seconds, not clock time do not check the time limit on greedy, put on specific points, after the greedy
     if the time limit is exceeded, return the best solution found so far.
     time: 60s or 60*10s
+*/
+void nearest_neighbor(instance* inst) {
+	int tour[inst->num_nodes];
+	double tot_cost = 0;
+	int count = 1, prev = 0;
+	tour[0] = prev;
+	bool used[inst->num_nodes];
+	memset(used, false, sizeof(bool) * inst->num_nodes);
+	while (count < inst->num_nodes) {
+		double min_cost = INFINITY;
+		int min_index = -1;
+		for (int i = 0; i < inst->num_nodes; i++) {
+			if (used[i]) continue;
+			double cost = inst->costs[prev][i];
+			if (cost < min_cost) {
+				min_cost = cost;
+				min_index = i;
+			}
+		}
+		used[min_index] = true;
+		tour[count++] = min_index;
+		tot_cost += min_cost;
+		prev = min_index;
+	}
+	tot_cost += inst->costs[prev][0];
+	update_sol(inst, tour, tot_cost);
+}
 
-    or
-
+/*
     Not extra point if we implement this!
     Extra-mialage heuristic: choose 2 point (consider far away) and connect them twice (to create a cycle) and then connect the other points to the cycle 
     rewritting the cycle (greedy policy avoiding the points already in the cycle) and then return the solution

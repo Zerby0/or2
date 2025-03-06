@@ -28,9 +28,11 @@ typedef struct {
     } while (0)
 
 int parse_tsp_file(instance *inst, const char* filename); 
-void basic_sol(instance* inst);
 int plot_instance(instance* inst);
 void update_sol(instance* inst, int* tour, double cost);
+
+void basic_sol(instance* inst);
+void nearest_neighbor(instance* inst);
 
 
 #endif // TSP_H

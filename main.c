@@ -1,5 +1,6 @@
 #include "tsp.h"
 
+#include <locale.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -25,7 +26,7 @@ int main(int argc, char *argv[]) {
 	parse_arguments(argc, argv, inst);
 	if (parse_tsp_file(inst, inst->file) == -1) return -1;
     debug(10, "Data collected\n");
-	basic_sol(inst);
+	nearest_neighbor(inst);
     debug(10, "Connections filled\n");
     plot_instance(inst);
     debug(10, "Data plotted\n");
