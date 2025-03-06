@@ -1,44 +1,40 @@
+#include "tsp.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include "tsp.h"
 
 void parse_arguments(int argc, char *argv[], instance *inst) {
     for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "-n") == 0) {inst->num_nodes = atoi(argv[++i]);}
-        if (strcmp(argv[i], "-seed") == 0) {inst->seed = atoi(argv[++i]);}
-        if (strcmp(argv[i], "-time") == 0) {inst->time_limit = atoi(argv[++i]);}
-        if (strcmp(argv[i], "-file") == 0) {inst->file = argv[++i];}
+        if (strcmp(argv[i], "-v") == 0) inst->verbose = atoi(argv[++i]);
+        if (strcmp(argv[i], "-n") == 0) inst->num_nodes = atoi(argv[++i]);
+        if (strcmp(argv[i], "--seed") == 0) inst->seed = atoi(argv[++i]);
+        if (strcmp(argv[i], "--time") == 0) inst->time_limit = atoi(argv[++i]);
+        if (strcmp(argv[i], "--file") == 0) inst->file = argv[++i];
     }
+	if (inst->file == NULL) inst->file = "data/d198.tsp";
 }
 
-
-
 int main(int argc, char *argv[]) {
-    instance inst;
+    instance inst_data = {0};
+	instance* inst = &inst_data;
     clock_t t1,t2; // we must use the world time instead of the cpu time because if the cpu is busy the time will be slower (or parallelize the code)
     double time;
     t1 = clock();
-    if (argc > 1) {
-        printf("Arguments received\n");
-        parse_arguments(argc, argv, &inst);
-        if (parse_tsp_file(inst.file, &inst) == -1) return 1;
-    }
-    else {
-        printf("No arguments received.\nDefault values will be used.\n");
-        if (parse_tsp_file("data/d198.tsp", &inst) == -1) return 1;
-    }
-    printf("Data collected\n");
-    basic_sol(&inst);
-    printf("Connections filled\n");
-    plot_instance(&inst);
-    printf("Data plotted\n");
+	parse_arguments(argc, argv, inst);
+	if (parse_tsp_file(inst, inst->file) == -1) return -1;
+    debug(10, "Data collected\n");
+	basic_sol(inst);
+    debug(10, "Connections filled\n");
+    plot_instance(inst);
+    debug(10, "Data plotted\n");
     t2 = clock();
     time = (double)(t2 - t1) / CLOCKS_PER_SEC;
-    printf("Time: %fs\n", time);
-    int rand0_1 = (rand() + 0.0)/RAND_MAX; //random number between 0 and 1
-    printf("Random number: %d\n", rand0_1); 
+    debug(5, "Time: %fs\n", time);
+
+	printf("%f\n", inst->sol_cost);
+
     return 0;
 }
 

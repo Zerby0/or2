@@ -1,9 +1,17 @@
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "tsp.h"
 
-int parse_tsp_file(const char* filename, instance *inst) {
+//cost function (distance from node to node)
+double cost(const instance* inst, int i, int j) {
+	double dx = inst->x_coords[i] - inst->x_coords[j];
+	double dy = inst->y_coords[i] - inst->y_coords[j];
+	return sqrt(dx*dx + dy*dy);
+}
+
+int parse_tsp_file(instance *inst, const char* filename) {
     if (!filename) {
         fprintf(stderr, "Error: filename is NULL\n");
         return -1;
@@ -51,6 +59,20 @@ int parse_tsp_file(const char* filename, instance *inst) {
         };
     }
     fclose(file);
+
+	// space for the solution
+	inst->sol = (int*) malloc((inst->num_nodes + 1) * sizeof(int));
+	inst->sol_cost = INFINITY;
+
+	// precompute the cost matrix
+	inst->costs = (double**) malloc(inst->num_nodes * sizeof(double*));
+	for(int i = 0; i < inst->num_nodes; i++) {
+		inst->costs[i] = (double*) malloc(inst->num_nodes * sizeof(double));
+		for(int j = 0; j < inst->num_nodes; j++) {
+			inst->costs[i][j] = cost(inst, i, j);
+		}
+	}
+
     return 0;
 }
 
