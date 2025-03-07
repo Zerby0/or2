@@ -57,6 +57,36 @@ void nearest_neighbor(instance* inst) {
 	update_sol(inst, tour, tot_cost);
 }
 
+void swap(int* a, int pos1, int pos2) {
+    int temp = a[pos1];
+    a[pos1] = a[pos2];
+    a[pos2] = temp;
+}
+
+void nearest_neighbor(instance* inst, int start) {
+    int temp_sol[inst->num_nodes + 1];
+    for(int i = 1; i <= inst->num_nodes; i++) {
+        temp_sol[i - 1] = i;
+    }
+    swap(temp_sol, 0, start - 1);
+    double tot_cost = 0;
+    for (int i = 0; i < inst->num_nodes; i++) {
+        int min_index = -1;
+        double min_cost = INF_COST;
+        for (int j = i + 1; j < inst->num_nodes; j++) {
+            double cost = inst->costs_array[i * inst->num_nodes + j];
+            if (cost < min_cost) {
+                min_cost = cost;
+                min_index = j;
+            }
+        }
+        swap(temp_sol, i + 1, min_index);
+        tot_cost += min_cost;
+    }
+    temp_sol[inst->num_nodes] = start;
+    tot_cost += inst->costs_array[(inst->num_nodes - 1) * inst->num_nodes + start];
+    if (tot_cost < inst->sol_cost) update_sol(inst, inst->sol, tot_cost);
+}
 /*
     Not extra point if we implement this!
     Extra-mialage heuristic: choose 2 point (consider far away) and connect them twice (to create a cycle) and then connect the other points to the cycle 

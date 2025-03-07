@@ -3,6 +3,8 @@
 
 //define a epsilon for the double comparison EPS_COST 1e-5
 //define infinite for the cost INF_COST 1e38
+#define EPS_COST 1e-5
+#define INF_COST 1e38
 
 typedef struct {
 	int verbose;       // Verbosity level 1-100

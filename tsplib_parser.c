@@ -30,7 +30,6 @@ int parse_tsp_file(instance *inst, const char* filename) {
             if (sscanf(line, "DIMENSION : %d", &inst->num_nodes) == 1) {
                 inst->x_coords = (double*) malloc(inst->num_nodes * sizeof(double));  //alternative to calloc (everything is set to 0)
                 inst->y_coords = (double*) malloc(inst->num_nodes * sizeof(double));
-                inst->sol = (int*) malloc((inst->num_nodes + 1) * sizeof(int));
                 //I can make an if() to check if the malloc was successful
             }
             else if (sscanf(line, "EDGE_WEIGHT_TYPE : %255s", weight_type) == 1) { 
@@ -62,7 +61,7 @@ int parse_tsp_file(instance *inst, const char* filename) {
 
 	// space for the solution
 	inst->sol = (int*) malloc((inst->num_nodes + 1) * sizeof(int));
-	inst->sol_cost = INFINITY;
+	inst->sol_cost = INF_COST;
 
 	// precompute the cost matrix
 	inst->costs = (double**) malloc(inst->num_nodes * sizeof(double*));
@@ -72,6 +71,15 @@ int parse_tsp_file(instance *inst, const char* filename) {
 			inst->costs[i][j] = cost(inst, i, j);
 		}
 	}
+
+    // Precompute the cost array
+    inst->costs_array = (double*) malloc(inst->num_nodes * inst->num_nodes * sizeof(double));
+    for (int i = 0; i < inst->num_nodes; i++) {
+        for (int j = 0; j < inst->num_nodes; j++) {
+            inst->costs_array[i * inst->num_nodes + j] = cost(inst, i, j);
+        }
+    }
+
 
     return 0;
 }
