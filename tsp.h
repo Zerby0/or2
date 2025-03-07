@@ -18,6 +18,7 @@ typedef struct {
     int* sol;          // current best solution; array for the connections O(n) should not be used for working memory, only store the best solution
 	double sol_cost;   // cost of the best solution
     char* file;        // File name
+    double* costs_array; //array for the costs of the edges
 
     //using a single data structure to store the coordinates of the pts can
     //be more efficient so the ram can do only one operation (the data separated are very far on the ram)

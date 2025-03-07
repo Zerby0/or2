@@ -86,6 +86,7 @@ void nearest_neighbor(instance* inst, int start) {
     temp_sol[inst->num_nodes] = start;
     tot_cost += inst->costs_array[(inst->num_nodes - 1) * inst->num_nodes + start];
     if (tot_cost < inst->sol_cost) update_sol(inst, inst->sol, tot_cost);
+    free(temp_sol);
 }
 /*
     Not extra point if we implement this!
