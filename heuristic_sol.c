@@ -50,10 +50,13 @@ void nearest_neighbor(instance* inst) {
 				min_index = i;
 			}
 		}
+		debug(80, "extending %d -> %d [%f]\n", prev, min_index, min_cost);
 		used[min_index] = true;
 		tour[count++] = min_index;
 		tot_cost += min_cost;
 		prev = min_index;
+		if (inst->verbose >= 90)
+			plot_partial_sol(inst, tour, count);
 	}
 	tot_cost += inst->costs[prev][0];
 	update_sol(inst, tour, tot_cost);
@@ -121,11 +124,13 @@ void extra_milage(instance* inst) {
 				}
 			}
 		}
-		debug(90, "extending tour with %d -> %d -> %d [+%f]\n", tour[min_pos], min_h, tour[min_pos + 1], min_cost);
+		debug(80, "extending tour with %d -> %d -> %d [+%f]\n", tour[min_pos], min_h, tour[min_pos + 1], min_cost);
 		array_insert(tour, count + 1, min_pos + 1, min_h);
 		tot_cost += min_cost;
 		count++;
 		used[min_h] = true;
+		if (inst->verbose >= 90)
+			plot_partial_sol(inst, tour, count);
 	}
 	update_sol(inst, tour, tot_cost);
 }

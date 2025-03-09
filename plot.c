@@ -16,7 +16,7 @@
     _a < _b ? _a : _b;       \
 })
 
-int plot_instance(instance* inst) {			// we need to also pass the solution for plotting all the variables solution (example for debugging)
+int plot_partial_sol(const instance* inst, const int* sol, int len) {
     double min_x = inst->x_coords[0], max_x = inst->x_coords[0];
 	double min_y = inst->y_coords[0], max_y = inst->y_coords[0];
     for (int i = 0; i < inst->num_nodes; i++) {
@@ -47,9 +47,9 @@ int plot_instance(instance* inst) {			// we need to also pass the solution for p
 	fprintf(pipe, "e\n");
 
 	// plot the connections
-    for (int i = 0; i < inst->num_nodes; i++) {
-        int idx1 = inst->sol[i];
-        int idx2 = inst->sol[(i + 1) % inst->num_nodes]; 
+    for (int i = 0; i < len; i++) {
+        int idx1 = sol[i];
+        int idx2 = sol[(i + 1) % len];
 		fprintf(pipe, "%f %f\n", inst->x_coords[idx1], inst->y_coords[idx1]);
         fprintf(pipe, "%f %f\n", inst->x_coords[idx2], inst->y_coords[idx2]);
         fprintf(pipe, "\n"); 
@@ -62,4 +62,12 @@ int plot_instance(instance* inst) {			// we need to also pass the solution for p
 	fflush(pipe);
 	pclose(pipe);
 	return 0;
+}
+
+int plot_solution(const instance* inst, const int* sol) {
+	return plot_partial_sol(inst, sol, inst->num_nodes);
+}
+
+int plot_instance(instance* inst) {
+	return plot_partial_sol(inst, inst->sol, inst->num_nodes);
 }

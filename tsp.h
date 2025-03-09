@@ -32,6 +32,8 @@ typedef struct {
 
 int parse_tsp_file(instance *inst, const char* filename); 
 int plot_instance(instance* inst);
+int plot_solution(const instance* inst, const int* sol);
+int plot_partial_sol(const instance* inst, const int* sol, int len);
 void update_sol(instance* inst, int* tour, double cost);
 
 void basic_sol(instance* inst);
