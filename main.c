@@ -25,8 +25,9 @@ int main(int argc, char *argv[]) {
     t1 = clock();
 	parse_arguments(argc, argv, inst);
 	if (parse_tsp_file(inst, inst->file) == -1) return -1;
-    debug(10, "Data collected\n");
-	nearest_neighbor(inst);
+    debug(10, "Data collected, instance size: %d\n", inst->num_nodes);
+	//nearest_neighbor(inst);
+	extra_milage(inst);
     debug(10, "Connections filled\n");
     plot_instance(inst);
     debug(10, "Data plotted\n");

@@ -33,6 +33,7 @@ void update_sol(instance* inst, int* tour, double cost);
 
 void basic_sol(instance* inst);
 void nearest_neighbor(instance* inst);
+void extra_milage(instance* inst);
 
 
 #endif // TSP_H
