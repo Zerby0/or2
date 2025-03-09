@@ -49,20 +49,22 @@ int main(int argc, char *argv[]) {
     instance inst_data = {0};
 	instance* inst = &inst_data;
     clock_t t1,t2; // we must use the world time instead of the cpu time because if the cpu is busy the time will be slower (or parallelize the code)
+
 	parse_arguments(argc, argv, inst);
 	srand(inst->seed);
+
 	if (parse_tsp_file(inst, inst->file) == -1) return -1;
     debug(10, "Data collected, instance size: %d\n", inst->num_nodes);
+
     t1 = clock();
 	solve_instance(inst);
     t2 = clock();
-    debug(10, "Connections filled\n");
-    plot_instance(inst);
-    debug(10, "Data plotted\n");
     double took = (double)(t2 - t1) / CLOCKS_PER_SEC;
+	printf("%f\n", inst->sol_cost);
     debug(5, "Time: %fs\n", took);
 
-	printf("%f\n", inst->sol_cost);
+    plot_instance(inst);
+    debug(10, "Data plotted\n");
 
     return 0;
 }
