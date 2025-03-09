@@ -5,17 +5,20 @@
 //define infinite for the cost INF_COST 1e38
 
 typedef struct {
+	// parameters
 	int verbose;       // Verbosity level 1-100
-
+    char* file;        // File name
+    int seed;          // Seed for random number generation (if used)
+    double time_limit; // Time limit for solving the problem
+	char* solver;      // Solver algorithm to use
+	// input data
     int num_nodes;     // Number of nodes
     double* x_coords;  // Array for x coordinates
     double* y_coords;  // Array for y coordinates
 	double** costs;    // Cost matrix; TODO: maybe use a 1D array?
-    int seed;          // Seed for random number generation (if used)
-    double time_limit; // Time limit for solving the problem
+	// working memory
     int* sol;          // current best solution; array for the connections O(n) should not be used for working memory, only store the best solution
 	double sol_cost;   // cost of the best solution
-    char* file;        // File name
 
     //using a single data structure to store the coordinates of the pts can
     //be more efficient so the ram can do only one operation (the data separated are very far on the ram)
