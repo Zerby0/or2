@@ -3,7 +3,6 @@
 #include <math.h>
 #include <stdbool.h>
 #include <memory.h>
-#include <stdio.h>
 #include <string.h>
 
 static void swap(int* a, int pos1, int pos2) {
@@ -23,7 +22,7 @@ void nearest_neighbor_from(instance* inst, int start) {
         int min_index = -1;
         double min_cost = INF_COST;
         for (int j = i + 1; j < inst->num_nodes; j++) {
-            double cost = inst->costs_array[tour[i] * inst->num_nodes + tour[j]];
+            double cost = get_cost(inst, tour[i], tour[j]);
             if (cost < min_cost) {
                 min_cost = cost;
                 min_index = j;
@@ -36,7 +35,7 @@ void nearest_neighbor_from(instance* inst, int start) {
 			plot_partial_sol(inst, tour, i + 2);
     }
 	int last_node = tour[inst->num_nodes - 1];
-    tot_cost += inst->costs_array[last_node * inst->num_nodes + start];
+    tot_cost += get_cost(inst, last_node, start);
     update_sol(inst, tour, tot_cost);
 }
 
@@ -55,7 +54,7 @@ double find_max_segment(const instance* inst, int* max_start, int* max_end) {
 	*max_start = *max_end = -1;
 	for (int i = 0; i < inst->num_nodes; i++) {
 		for (int j = i + 1; j < inst->num_nodes; j++) {
-			double dist = inst->costs[i][j];
+			double dist = get_cost(inst, i, j);
 			if (dist > max_dist) {
 				max_dist = dist;
 				*max_start = i;
@@ -95,8 +94,8 @@ void extra_milage(instance* inst) {
 			for (int pos = 0; pos < count; pos++) {
 				int i = tour[pos], j = tour[pos + 1];
 				assert(i != j && i != h && j != h);
-				double cij = inst->costs[i][j];
-				double cihj = inst->costs[i][h] + inst->costs[h][j];
+				double cij = get_cost(inst, i, j);
+				double cihj = get_cost(inst, i, h) + get_cost(inst, h, j);
 				double extra = cihj - cij;
 				assert(extra >= -1e-9); // triangle inequality
 				if (extra < min_cost) {

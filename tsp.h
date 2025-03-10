@@ -1,10 +1,12 @@
+#include <stdio.h>
+
 #ifndef TSP_H
 #define TSP_H
 
 //define a epsilon for the double comparison EPS_COST 1e-5
 //define infinite for the cost INF_COST 1e38
-#define EPS_COST 1e-5
-#define INF_COST 1e38
+static const double EPS_COST = 1e-5;
+static const double INF_COST = 1e38;
 
 typedef struct {
 	// parameters
@@ -17,7 +19,6 @@ typedef struct {
     int num_nodes;     // Number of nodes
     double* x_coords;  // Array for x coordinates
     double* y_coords;  // Array for y coordinates
-	double** costs;    // Cost matrix; TODO: maybe use a 1D array?
     double* costs_array; //array for the costs of the edges
 	// working memory
     int* sol;          // current best solution; array for the connections O(n) should not be used for working memory, only store the best solution
@@ -37,7 +38,9 @@ int parse_tsp_file(instance *inst, const char* filename);
 int plot_instance(instance* inst);
 int plot_solution(const instance* inst, const int* sol);
 int plot_partial_sol(const instance* inst, const int* sol, int len);
+
 void update_sol(instance* inst, int* tour, double cost);
+double get_cost(const instance* inst, int i, int j);
 
 void basic_sol(instance* inst);
 void nearest_neighbor(instance* inst);
@@ -45,4 +48,3 @@ void extra_milage(instance* inst);
 
 
 #endif // TSP_H
-

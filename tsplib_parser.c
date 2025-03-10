@@ -1,11 +1,12 @@
+#include "tsp.h"
+
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "tsp.h"
 
 //cost function (distance from node to node)
-double cost(const instance* inst, int i, int j) {
+double calc_cost(const instance* inst, int i, int j) {
 	double dx = inst->x_coords[i] - inst->x_coords[j];
 	double dy = inst->y_coords[i] - inst->y_coords[j];
 	return sqrt(dx*dx + dy*dy);
@@ -63,23 +64,13 @@ int parse_tsp_file(instance *inst, const char* filename) {
 	inst->sol = (int*) malloc((inst->num_nodes + 1) * sizeof(int));
 	inst->sol_cost = INF_COST;
 
-	// precompute the cost matrix
-	inst->costs = (double**) malloc(inst->num_nodes * sizeof(double*));
-	for(int i = 0; i < inst->num_nodes; i++) {
-		inst->costs[i] = (double*) malloc(inst->num_nodes * sizeof(double));
-		for(int j = 0; j < inst->num_nodes; j++) {
-			inst->costs[i][j] = cost(inst, i, j);
-		}
-	}
-
     // Precompute the cost array
     inst->costs_array = (double*) malloc(inst->num_nodes * inst->num_nodes * sizeof(double));
     for (int i = 0; i < inst->num_nodes; i++) {
         for (int j = 0; j < inst->num_nodes; j++) {
-            inst->costs_array[i * inst->num_nodes + j] = cost(inst, i, j);
+            inst->costs_array[i * inst->num_nodes + j] = calc_cost(inst, i, j);
         }
     }
-
 
     return 0;
 }

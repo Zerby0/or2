@@ -1,5 +1,5 @@
 #include "tsp.h"
-#include <math.h>
+
 #include <stdbool.h>
 #include <memory.h>
 #include <stdlib.h>
@@ -31,8 +31,10 @@ void two_opt(instance* inst) {
                 int b = tour[i + 1];
                 int c = tour[j];
                 int d = tour[(j + 1) % inst->num_nodes];
-                double delta = inst->costs_array[a * inst->num_nodes + c] + inst->costs_array[b * inst->num_nodes + d] - inst->costs_array[a * inst->num_nodes + b] - inst->costs_array[c * inst->num_nodes + d];
-                if (delta < 0) {
+				double cost_add = get_cost(inst, a, c) + get_cost(inst, b, d);
+				double cost_rem = get_cost(inst, a, b) + get_cost(inst, c, d);
+				double delta = cost_add - cost_rem;
+				if (delta < -EPS_COST) {
                     improved = true;
                     for (int k = 0; k < (j - i) / 2; k++) {
                         swap(tour, i + 1 + k, j - k);
