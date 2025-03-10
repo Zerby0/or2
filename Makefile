@@ -1,5 +1,13 @@
+CFLAGS=-std=c11 -D_POSIX_C_SOURCE=200809L -lm
+
 tsp: *.c
-	gcc *.c -lm -o tsp
+	gcc $(CFLAGS) $^ -o $@
+
+tsp-debug: *.c
+	gcc -g $(CFLAGS) $^ -o $@
+
+tsp-release: *.c
+	gcc -O3 $(CFLAGS) $^ -o $@
 
 clean:
-	rm -f tsp
+	rm -f tsp tsp-debug tsp-release

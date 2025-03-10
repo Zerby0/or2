@@ -6,35 +6,65 @@
 #include <string.h>
 #include <time.h>
 
+#define _argi(name, field) \
+	else if (strcmp(argv[i], name) == 0) inst->field = atoi(argv[++i])
+#define _args(name, field) \
+	else if (strcmp(argv[i], name) == 0) inst->field = argv[++i]
+
 void parse_arguments(int argc, char *argv[], instance *inst) {
+	inst->seed = time(NULL);
+	inst->file = "data/d198.tsp";
+	inst->solver = "basic";
     for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "-v") == 0) inst->verbose = atoi(argv[++i]);
-        if (strcmp(argv[i], "-n") == 0) inst->num_nodes = atoi(argv[++i]);
-        if (strcmp(argv[i], "--seed") == 0) inst->seed = atoi(argv[++i]);
-        if (strcmp(argv[i], "--time") == 0) inst->time_limit = atoi(argv[++i]);
-        if (strcmp(argv[i], "--file") == 0) inst->file = argv[++i];
+		if (0);
+		_argi("-v", verbose);
+		_argi("--verb", verbose);
+		_argi("-n", num_nodes);
+		_argi("--num-nodes", num_nodes);
+		_argi("--seed", seed);
+		_argi("-t", time_limit);
+		_argi("--time", time_limit);
+		_args("-f", file);
+		_args("--file", file);
+		_args("-s", solver);
+		_args("--solver", solver);
+		else {
+			fprintf(stderr, "Unknown option: %s\n", argv[i]);
+			exit(1);
+		}
     }
-	if (inst->file == NULL) inst->file = "data/d198.tsp";
+}
+
+void solve_instance(instance *inst) {
+	if (strcmp(inst->solver, "basic") == 0) basic_sol(inst);
+	else if (strcmp(inst->solver, "nn") == 0) nearest_neighbor(inst);
+	else if (strcmp(inst->solver, "em") == 0) extra_milage(inst);
+	else {
+		fprintf(stderr, "Unknown solver: %s\n", inst->solver);
+		exit(1);
+	}
 }
 
 int main(int argc, char *argv[]) {
     instance inst_data = {0};
 	instance* inst = &inst_data;
     clock_t t1,t2; // we must use the world time instead of the cpu time because if the cpu is busy the time will be slower (or parallelize the code)
-    double time;
-    t1 = clock();
+
 	parse_arguments(argc, argv, inst);
+	srand(inst->seed);
+
 	if (parse_tsp_file(inst, inst->file) == -1) return -1;
-    debug(10, "Data collected\n");
-	nearest_neighbor(inst);
-    debug(10, "Connections filled\n");
+    debug(10, "Data collected, instance size: %d\n", inst->num_nodes);
+
+    t1 = clock();
+	solve_instance(inst);
+    t2 = clock();
+    double took = (double)(t2 - t1) / CLOCKS_PER_SEC;
+	printf("%f\n", inst->sol_cost);
+    debug(5, "Time: %fs\n", took);
+
     plot_instance(inst);
     debug(10, "Data plotted\n");
-    t2 = clock();
-    time = (double)(t2 - t1) / CLOCKS_PER_SEC;
-    debug(5, "Time: %fs\n", time);
-
-	printf("%f\n", inst->sol_cost);
 
     return 0;
 }

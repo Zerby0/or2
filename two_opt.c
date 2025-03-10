@@ -3,8 +3,9 @@
 #include <stdbool.h>
 #include <memory.h>
 #include <stdlib.h>
+#include <stdio.h>
 
-void swap(int* a, int pos1, int pos2) {
+static void swap(int* a, int pos1, int pos2) {
     int temp = a[pos1];
     a[pos1] = a[pos2];
     a[pos2] = temp;
