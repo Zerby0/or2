@@ -10,8 +10,10 @@
 	else if (strcmp(argv[i], name) == 0) inst->field = atoi(argv[++i])
 #define _args(name, field) \
 	else if (strcmp(argv[i], name) == 0) inst->field = argv[++i]
+#define _argb(name, field) \
+	else if (strcmp(argv[i], name) == 0) inst->field = true
 
-void parse_arguments(int argc, char *argv[], instance *inst) {
+int parse_arguments(int argc, char *argv[], instance *inst) {
 	inst->seed = time(NULL);
 	inst->file = "data/d198.tsp";
 	inst->solver = "basic";
@@ -28,21 +30,26 @@ void parse_arguments(int argc, char *argv[], instance *inst) {
 		_args("--file", file);
 		_args("-s", solver);
 		_args("--solver", solver);
+		_argb("-2", two_opt);
+		_argb("--two-opt", two_opt);
 		else {
 			fprintf(stderr, "Unknown option: %s\n", argv[i]);
-			exit(1);
+			return -1;
 		}
     }
+	return 0;
 }
 
-void solve_instance(instance *inst) {
+int solve_instance(instance *inst) {
 	if (strcmp(inst->solver, "basic") == 0) basic_sol(inst);
 	else if (strcmp(inst->solver, "nn") == 0) nearest_neighbor(inst);
 	else if (strcmp(inst->solver, "em") == 0) extra_milage(inst);
 	else {
 		fprintf(stderr, "Unknown solver: %s\n", inst->solver);
-		exit(1);
+		return -1;
 	}
+	if (inst->two_opt) two_opt(inst);
+	return 0;
 }
 
 int main(int argc, char *argv[]) {
@@ -50,14 +57,14 @@ int main(int argc, char *argv[]) {
 	instance* inst = &inst_data;
     clock_t t1,t2; // we must use the world time instead of the cpu time because if the cpu is busy the time will be slower (or parallelize the code)
 
-	parse_arguments(argc, argv, inst);
+	if (parse_arguments(argc, argv, inst) == -1) return -1;
 	srand(inst->seed);
 
 	if (parse_tsp_file(inst, inst->file) == -1) return -1;
     debug(10, "Data collected, instance size: %d\n", inst->num_nodes);
 
     t1 = clock();
-	solve_instance(inst);
+	if (solve_instance(inst) == -1) return -1;
     t2 = clock();
     double took = (double)(t2 - t1) / CLOCKS_PER_SEC;
 	printf("%f\n", inst->sol_cost);

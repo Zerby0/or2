@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdbool.h>
 
 #ifndef TSP_H
 #define TSP_H
@@ -15,6 +16,7 @@ typedef struct {
     int seed;          // Seed for random number generation (if used)
     double time_limit; // Time limit for solving the problem
 	char* solver;      // Solver algorithm to use
+	bool two_opt;      // Apply two-opt algorithm after the solver
 	// input data
     int num_nodes;     // Number of nodes
     double* x_coords;  // Array for x coordinates
@@ -45,6 +47,6 @@ double get_cost(const instance* inst, int i, int j);
 void basic_sol(instance* inst);
 void nearest_neighbor(instance* inst);
 void extra_milage(instance* inst);
-
+void two_opt(instance* inst);
 
 #endif // TSP_H
