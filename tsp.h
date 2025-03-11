@@ -52,5 +52,6 @@ void basic_sol(instance* inst);
 void nearest_neighbor(instance* inst);
 void extra_milage(instance* inst);
 void two_opt(instance* inst);
+void kick_rand_3_opt(instance* inst, int times);
 
 #endif // TSP_H
