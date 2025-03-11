@@ -67,6 +67,7 @@ int main(int argc, char *argv[]) {
 	if (solve_instance(inst) == -1) return -1;
     t2 = clock();
     double took = (double)(t2 - t1) / CLOCKS_PER_SEC;
+	plot_cost_iteration(FILE_COST_ITER);
 	printf("%f\n", inst->sol_cost);
     debug(5, "Time: %fs\n", took);
 

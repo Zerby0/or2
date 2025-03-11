@@ -8,6 +8,8 @@
 //define infinite for the cost INF_COST 1e38
 static const double EPS_COST = 1e-5;
 static const double INF_COST = 1e38;
+static const char* FILE_COST_ITER = "cost_iter.dat";
+
 
 typedef struct {
 	// parameters
@@ -40,6 +42,8 @@ int parse_tsp_file(instance *inst, const char* filename);
 int plot_instance(instance* inst);
 int plot_solution(const instance* inst, const int* sol);
 int plot_partial_sol(const instance* inst, const int* sol, int len);
+void plot_cost_iteration(const char* filename);
+void save_cost_to_file(const char* filename, int iteration, double cost);
 
 void update_sol(instance* inst, int* tour, double cost);
 double get_cost(const instance* inst, int i, int j);
