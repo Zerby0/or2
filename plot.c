@@ -91,9 +91,9 @@ void plot_cost_iteration(const char *filename) {
         return;
     }
 
-    fprintf(gnuplot, "set title 'Costo della soluzione - 2-opt'\n");
-    fprintf(gnuplot, "set xlabel 'Iterazioni'\n");
-    fprintf(gnuplot, "set ylabel 'Costo della soluzione'\n");
+    fprintf(gnuplot, "set title 'Solution costs to iteration'\n");
+    fprintf(gnuplot, "set xlabel 'Iterations'\n");
+    fprintf(gnuplot, "set ylabel 'Solution costs'\n");
     fprintf(gnuplot, "plot '%s' with lines title 'Costo'\n", filename);
 
     pclose(gnuplot);

@@ -65,8 +65,13 @@ int main(int argc, char *argv[]) {
 
     t1 = clock();
 	if (solve_instance(inst) == -1) return -1;
-	kick_rand_3_opt(inst, 3);
-    t2 = clock();
+	for(int i = 2; i < 1000; i++) {
+		kick_rand_3_opt(inst, 5);
+		two_opt(inst);
+		save_cost_to_file(FILE_COST_ITER, i, inst->sol_cost);
+		debug(5, "Iteration %d: %f\n", i, inst->sol_cost);
+	}
+	t2 = clock();
     double took = (double)(t2 - t1) / CLOCKS_PER_SEC;
 	plot_cost_iteration(FILE_COST_ITER);
 	printf("%f\n", inst->sol_cost);
