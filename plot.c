@@ -2,20 +2,6 @@
 
 #include <stdio.h>
 
-#define max(a,b)             \
-({                           \
-    __typeof__ (a) _a = (a); \
-    __typeof__ (b) _b = (b); \
-    _a > _b ? _a : _b;       \
-})
-
-#define min(a,b)             \
-({                           \
-    __typeof__ (a) _a = (a); \
-    __typeof__ (b) _b = (b); \
-    _a < _b ? _a : _b;       \
-})
-
 int plot_partial_sol(const instance* inst, const int* sol, int len) {
     double min_x = inst->x_coords[0], max_x = inst->x_coords[0];
 	double min_y = inst->y_coords[0], max_y = inst->y_coords[0];

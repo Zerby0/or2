@@ -59,4 +59,18 @@ bool two_opt_once(const instance* inst, int* tour, double* cost);
 void two_opt(instance* inst);
 void variable_neigh_search(instance* inst);
 
+#define max(a,b)             \
+({                           \
+    __typeof__ (a) _a = (a); \
+    __typeof__ (b) _b = (b); \
+    _a > _b ? _a : _b;       \
+})
+
+#define min(a,b)             \
+({                           \
+    __typeof__ (a) _a = (a); \
+    __typeof__ (b) _b = (b); \
+    _a < _b ? _a : _b;       \
+})
+
 #endif // TSP_H

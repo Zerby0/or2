@@ -1,7 +1,20 @@
 #include "tsp.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+void gen_random_triplet(int n, int* h, int* j, int* k) {
+    int a, b, c;
+    do {
+        a = rand() % n;
+        b = rand() % n;
+        c = rand() % n;
+    } while (a == b || b == c || a == c);
+	*h = min(a, min(b, c));
+	*k = max(a, max(b, c));
+	*j = a + b + c - *h - *k;
+}
 
 void random_3opt(const instance* inst, int* tour, double* cost) {
     if (inst->num_nodes < 6) {
@@ -9,11 +22,7 @@ void random_3opt(const instance* inst, int* tour, double* cost) {
         return;
     }
     int h, j, k;
-    do {
-        h = rand() % (inst->num_nodes - 2);
-        j = h + 1 + (rand() % (inst->num_nodes - h - 3)); // TODO this can be zero
-        k = j + 1 + (rand() % (inst->num_nodes - j - 2));
-    } while (k >= inst->num_nodes - 1);
+	gen_random_triplet(inst->num_nodes, &h, &j, &k);
     
     int move = rand() % 4;
     debug(80, "3-opt kick type %d: %d %d %d\n", move, h, j, k);
