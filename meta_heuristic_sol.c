@@ -56,10 +56,15 @@ void variable_neigh_search(instance* inst) {
 	int tour[inst->num_nodes];
 	memcpy(tour, inst->sol, inst->num_nodes * sizeof(int));
 	double cost = inst->sol_cost;
+	if (inst->plot_cost) list_d_init(&inst->iter_costs);
 	for (int iter = 1; iter < 1000; iter++) { // TODO time limit
-		for (int i = 0; i < 10; i++)
+		for (int i = 0; i < 3; i++)
 			random_3opt(inst, tour, &cost);
-		while (two_opt_once(inst, tour, &cost)) iter++;
+		if (inst->plot_cost) list_d_push(&inst->iter_costs, cost);
+		while (two_opt_once(inst, tour, &cost)) {
+			iter++;
+			if (inst->plot_cost) list_d_push(&inst->iter_costs, cost);
+		}
 		debug(60, "VNS iteration %d, cost = %.2f\n", iter, cost);
 		update_sol(inst, tour, cost);
 	}

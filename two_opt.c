@@ -43,8 +43,12 @@ void two_opt(instance* inst) {
     int tour[inst->num_nodes];
 	memcpy(tour, inst->sol, inst->num_nodes * sizeof(int));
 	double cost = inst->sol_cost;
+	int iter = 0;
+	if (inst->plot_cost) list_d_init(&inst->iter_costs);
 	while (two_opt_once(inst, tour, &cost)) {
-		debug(80, "2-opt improved cost = %.2f\n", cost);
+		iter++;
+		if (inst->plot_cost) list_d_push(&inst->iter_costs, cost);
 	}
+	debug(40, "2-opt: %d iterations, cost: %f\n", iter, cost);
     update_sol(inst, tour, cost);
 }

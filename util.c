@@ -1,4 +1,5 @@
 #include "tsp.h"
+#include <stdlib.h>
 
 void swap(int* a, int pos1, int pos2) {
     int temp = a[pos1];
@@ -22,4 +23,18 @@ double compute_tour_cost(const instance* inst, const int* tour) {
         cost += get_cost(inst, a, b);
     }
     return cost;
+}
+
+void list_d_init(list_d *l) {
+	l->buf = (double*) malloc(16 * sizeof(double));
+	l->len = 0;
+	l->capacity = 16;
+}
+
+void list_d_push(list_d *l, double val) {
+	if (l->len == l->capacity) {
+		l->capacity *= 2;
+		l->buf = (double*) realloc(l->buf, l->capacity * sizeof(double));
+	}
+	l->buf[l->len++] = val;
 }

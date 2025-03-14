@@ -58,29 +58,28 @@ int plot_instance(instance* inst) {
 	return plot_partial_sol(inst, inst->sol, inst->num_nodes);
 }
 
-//to save the cost of the solution i in a file
-void save_cost_to_file(const char *filename, int iteration, double cost) {
-    FILE *file = fopen(filename, "a");
-    if (file == NULL) {
-        perror("Errore apertura file");
-        return;
-    }
-    fprintf(file, "%d %.2f\n", iteration, cost);
-    fclose(file);
-}
-
-//plot the cost of the solution in a file
-void plot_cost_iteration(const char *filename) {
-    FILE *gnuplot = popen("gnuplot -persistent", "w");
-    if (gnuplot == NULL) {
-        perror("Errore apertura Gnuplot");
+void plot_cost_iteration(double* costs, int num_costs) {
+	if (num_costs == 0) {
+		return;
+	}
+    FILE *pipe = popen("gnuplot", "w");
+    if (pipe == NULL) {
+        perror("Error opening Gnuplot");
         return;
     }
 
-    fprintf(gnuplot, "set title 'Costo della soluzione - 2-opt'\n");
-    fprintf(gnuplot, "set xlabel 'Iterazioni'\n");
-    fprintf(gnuplot, "set ylabel 'Costo della soluzione'\n");
-    fprintf(gnuplot, "plot '%s' with lines title 'Costo'\n", filename);
+    fprintf(pipe, "set title 'Cost of the solution'\n");
+    fprintf(pipe, "set xlabel 'Iteration'\n");
+    fprintf(pipe, "set ylabel 'Cost'\n");
 
-    pclose(gnuplot);
+    fprintf(pipe, "plot '-' with lines title 'Cost'\n");
+	for (int i = 0; i < num_costs; i++) {
+		fprintf(pipe, "%d %f\n", i, costs[i]);
+	}
+	fprintf(pipe, "e\n");
+
+	fprintf(pipe, "pause mouse keypress\n");
+
+	fflush(pipe);
+    pclose(pipe);
 }

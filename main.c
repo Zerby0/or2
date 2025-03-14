@@ -32,6 +32,7 @@ int parse_arguments(int argc, char *argv[], instance *inst) {
 		_args("--solver", solver);
 		_argb("-2", two_opt);
 		_argb("--two-opt", two_opt);
+		_argb("--plot-cost", plot_cost);
 		else {
 			fprintf(stderr, "Unknown option: %s\n", argv[i]);
 			return -1;
@@ -71,6 +72,8 @@ int main(int argc, char *argv[]) {
 	printf("%f\n", inst->sol_cost);
     debug(5, "Time: %fs\n", took);
 
+	if (inst->plot_cost && inst->iter_costs.len > 0)
+		plot_cost_iteration(inst->iter_costs.buf, inst->iter_costs.len);
     plot_instance(inst);
     debug(10, "Data plotted\n");
 
