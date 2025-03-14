@@ -21,11 +21,7 @@ bool check_sol(const instance* inst, int* tour, double cost) {
 			return false;
 		}
 	}
-	double tot = 0;
-	for (int i = 0; i < inst->num_nodes; i++) {
-		int a = tour[i], b = tour[(i + 1) % inst->num_nodes];
-		tot += get_cost(inst, a, b);
-	}
+	double tot = compute_tour_cost(inst, tour);
 	if (fabs(tot - cost) > EPS_COST) {
 		fprintf(stderr, "Invalid tour: provided cost %f != recomputed cost %f\n", cost, tot);
 		return false;

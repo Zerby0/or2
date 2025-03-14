@@ -40,6 +40,7 @@ typedef struct {
 
 void swap(int* a, int pos1, int pos2);
 void invert_subtour(int* tour, int i, int j);
+double compute_tour_cost(const instance* inst, const int* tour); // O(n)
 
 int parse_tsp_file(instance *inst, const char* filename); 
 int plot_instance(instance* inst);
@@ -56,6 +57,6 @@ void nearest_neighbor(instance* inst);
 void extra_milage(instance* inst);
 bool two_opt_once(const instance* inst, int* tour, double* cost);
 void two_opt(instance* inst);
-void kick_rand_3_opt(instance* inst, int times);
+void variable_neigh_search(instance* inst);
 
 #endif // TSP_H

@@ -13,3 +13,13 @@ void invert_subtour(int* tour, int i, int j) {
 		j--;
 	}
 }
+
+double compute_tour_cost(const instance* inst, const int* tour) {
+    double cost = 0.0;
+    for (int i = 0; i < inst->num_nodes; i++) {
+        int a = tour[i];
+        int b = tour[(i + 1) % inst->num_nodes];
+        cost += get_cost(inst, a, b);
+    }
+    return cost;
+}

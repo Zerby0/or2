@@ -44,6 +44,7 @@ int solve_instance(instance *inst) {
 	if (strcmp(inst->solver, "basic") == 0) basic_sol(inst);
 	else if (strcmp(inst->solver, "nn") == 0) nearest_neighbor(inst);
 	else if (strcmp(inst->solver, "em") == 0) extra_milage(inst);
+	else if (strcmp(inst->solver, "vns") == 0) variable_neigh_search(inst);
 	else {
 		fprintf(stderr, "Unknown solver: %s\n", inst->solver);
 		return -1;
