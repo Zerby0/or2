@@ -5,20 +5,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-static void swap(int* a, int pos1, int pos2) {
-    int temp = a[pos1];
-    a[pos1] = a[pos2];
-    a[pos2] = temp;
-}
-
-void invert_subtour(int* tour, int i, int j) {
-	while (i < j) {
-		swap(tour, i, j);
-		i++;
-		j--;
-	}
-}
-
 bool two_opt_once(const instance* inst, int* tour, double* cost) {
 	int best_i, best_j;
 	double best_delta = 0;

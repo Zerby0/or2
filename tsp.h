@@ -38,6 +38,9 @@ typedef struct {
         if (inst->verbose >= level) printf(__VA_ARGS__); \
     } while (0)
 
+void swap(int* a, int pos1, int pos2);
+void invert_subtour(int* tour, int i, int j);
+
 int parse_tsp_file(instance *inst, const char* filename); 
 int plot_instance(instance* inst);
 int plot_solution(const instance* inst, const int* sol);
@@ -51,6 +54,7 @@ double get_cost(const instance* inst, int i, int j);
 void basic_sol(instance* inst);
 void nearest_neighbor(instance* inst);
 void extra_milage(instance* inst);
+bool two_opt_once(const instance* inst, int* tour, double* cost);
 void two_opt(instance* inst);
 void kick_rand_3_opt(instance* inst, int times);
 

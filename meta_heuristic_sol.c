@@ -3,12 +3,6 @@
 #include <stdlib.h>
 #include <time.h>
 
-static void swap(int* a, int pos1, int pos2) {
-    int temp = a[pos1];
-    a[pos1] = a[pos2];
-    a[pos2] = temp;
-}
-
 //forse da spostare in un file a parte come 2-opt? filename: opt.c?
 void kick_rand_3_opt(instance* inst, int times){
     if (inst->num_nodes < 6) {
