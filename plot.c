@@ -72,14 +72,19 @@ void plot_cost_iteration(double* costs, int num_costs) {
     fprintf(pipe, "set xlabel 'Iteration'\n");
     fprintf(pipe, "set ylabel 'Cost'\n");
 
-    fprintf(pipe, "plot '-' with lines title 'Cost'\n");
-	for (int i = 0; i < num_costs; i++) {
-		fprintf(pipe, "%d %f\n", i, costs[i]);
-	}
-	fprintf(pipe, "e\n");
+    fprintf(pipe, "plot '-' with lines linecolor rgb 'blue' title 'Cost', '-' with lines linecolor rgb 'red' title 'Best Cost'\n");
+    for (int i = 0; i < num_costs; i++) {
+        fprintf(pipe, "%d %f\n", i, costs[i]);
+    }
+    fprintf(pipe, "e\n");
+	double best = costs[0];
+    for (int i = 0; i < num_costs; i++) {
+		best = min(best, costs[i]);
+        fprintf(pipe, "%d %f\n", i, best);
+    }
+    fprintf(pipe, "e\n");
 
 	fprintf(pipe, "pause mouse keypress\n");
-
 	fflush(pipe);
     pclose(pipe);
 }
