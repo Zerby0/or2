@@ -32,6 +32,7 @@ int parse_arguments(int argc, char *argv[], instance *inst) {
 		_args("--solver", solver);
 		_argb("-2", two_opt);
 		_argb("--two-opt", two_opt);
+		_argb("--plot-cost", plot_cost);
 		else {
 			fprintf(stderr, "Unknown option: %s\n", argv[i]);
 			return -1;
@@ -44,6 +45,7 @@ int solve_instance(instance *inst) {
 	if (strcmp(inst->solver, "basic") == 0) basic_sol(inst);
 	else if (strcmp(inst->solver, "nn") == 0) nearest_neighbor(inst);
 	else if (strcmp(inst->solver, "em") == 0) extra_milage(inst);
+	else if (strcmp(inst->solver, "vns") == 0) variable_neigh_search(inst);
 	else {
 		fprintf(stderr, "Unknown solver: %s\n", inst->solver);
 		return -1;
@@ -65,18 +67,13 @@ int main(int argc, char *argv[]) {
 
     t1 = clock();
 	if (solve_instance(inst) == -1) return -1;
-	for(int i = 2; i < 1000; i++) {
-		kick_rand_3_opt(inst, 5);
-		two_opt(inst);
-		save_cost_to_file(FILE_COST_ITER, i, inst->sol_cost);
-		debug(5, "Iteration %d: %f\n", i, inst->sol_cost);
-	}
-	t2 = clock();
+    t2 = clock();
     double took = (double)(t2 - t1) / CLOCKS_PER_SEC;
-	plot_cost_iteration(FILE_COST_ITER);
 	printf("%f\n", inst->sol_cost);
     debug(5, "Time: %fs\n", took);
 
+	if (inst->plot_cost && inst->iter_costs.len > 0)
+		plot_cost_iteration(inst->iter_costs.buf, inst->iter_costs.len);
     plot_instance(inst);
     debug(10, "Data plotted\n");
 

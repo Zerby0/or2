@@ -5,12 +5,6 @@
 #include <memory.h>
 #include <string.h>
 
-static void swap(int* a, int pos1, int pos2) {
-    int temp = a[pos1];
-    a[pos1] = a[pos2];
-    a[pos2] = temp;
-}
-
 void nearest_neighbor_from(instance* inst, int start) {
     int tour[inst->num_nodes];
     for(int i = 0; i < inst->num_nodes; i++) {
