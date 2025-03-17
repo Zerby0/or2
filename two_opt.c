@@ -35,7 +35,6 @@ bool two_opt_once(const instance* inst, int* tour, double* cost) {
 }
 
 void two_opt(instance* inst) {
-	// TODO time limit
     if (inst->num_nodes < 3) {
         printf("Error: instance has less than 3 nodes\n");
         return;
@@ -45,7 +44,7 @@ void two_opt(instance* inst) {
 	double cost = inst->sol_cost;
 	int iter = 0;
 	if (inst->plot_cost) list_d_init(&inst->iter_costs);
-	while (two_opt_once(inst, tour, &cost)) {
+	while (two_opt_once(inst, tour, &cost) && !is_out_of_time(inst)) {
 		iter++;
 		if (inst->plot_cost) list_d_push(&inst->iter_costs, cost);
 	}

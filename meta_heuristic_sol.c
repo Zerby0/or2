@@ -18,8 +18,8 @@ void gen_random_triplet(int n, int* h, int* j, int* k) {
 
 void random_3opt(const instance* inst, int* tour, double* cost) {
     if (inst->num_nodes < 6) {
-        printf("Error: instance has less than 4 nodes\n");
-        return;
+        printf("Error: instance has less than 6 nodes\n");
+		exit(1);
     }
     int h, j, k;
 	gen_random_triplet(inst->num_nodes, &h, &j, &k);
@@ -49,6 +49,9 @@ void random_3opt(const instance* inst, int* tour, double* cost) {
 }
 
 void variable_neigh_search(instance* inst) {
+	if (inst->time_limit <= 0) {
+		debug(5, "WARNING: VNS called without time limit\n");
+	}
 	if (inst->sol_cost == INF_COST) {
 		debug(20, "Initializing solution for VNS with basic_sol\n");
 		basic_sol(inst);
@@ -57,11 +60,11 @@ void variable_neigh_search(instance* inst) {
 	memcpy(tour, inst->sol, inst->num_nodes * sizeof(int));
 	double cost = inst->sol_cost;
 	if (inst->plot_cost) list_d_init(&inst->iter_costs);
-	for (int iter = 1; iter < 1000; iter++) { // TODO time limit
+	for (int iter = 1; !is_out_of_time(inst); iter++) {
 		for (int i = 0; i < 3; i++)
 			random_3opt(inst, tour, &cost);
 		if (inst->plot_cost) list_d_push(&inst->iter_costs, cost);
-		while (two_opt_once(inst, tour, &cost)) {
+		while (two_opt_once(inst, tour, &cost) && !is_out_of_time(inst)) {
 			iter++;
 			if (inst->plot_cost) list_d_push(&inst->iter_costs, cost);
 		}

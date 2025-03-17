@@ -32,6 +32,7 @@ typedef struct {
 	// working memory
     int* sol;          // current best solution; array for the connections O(n) should not be used for working memory, only store the best solution
 	double sol_cost;   // cost of the best solution
+	double start_time; // time when the program started, to check OOT
 	// debugging data
 	list_d iter_costs; // list of costs per iteration
 
@@ -40,10 +41,8 @@ typedef struct {
     //we should try to be very close to maximise the efficency 
 } instance;
 
-#define debug(level, ...) \
-    do { \
-        if (inst->verbose >= level) printf(__VA_ARGS__); \
-    } while (0)
+double get_time();
+bool is_out_of_time(const instance* inst);
 
 void list_d_init(list_d* l);
 void list_d_push(list_d* l, double val);
@@ -69,7 +68,12 @@ bool two_opt_once(const instance* inst, int* tour, double* cost);
 void two_opt(instance* inst);
 void variable_neigh_search(instance* inst);
 
-// utility
+// utility macros
+
+#define debug(level, ...) \
+    do { \
+        if (inst->verbose >= level) printf(__VA_ARGS__); \
+    } while (0)
 
 #define max(a,b)             \
 ({                           \

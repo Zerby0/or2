@@ -1,4 +1,5 @@
 #include "tsp.h"
+
 #include <assert.h>
 #include <math.h>
 #include <memory.h>
@@ -43,4 +44,11 @@ double get_cost(const instance* inst, int i, int j) {
 	assert(0 <= i && i < inst->num_nodes);
 	assert(0 <= j && j < inst->num_nodes);
 	return inst->costs_array[i * inst->num_nodes + j];
+}
+
+bool is_out_of_time(const instance* inst) {
+	if (inst->time_limit <= 0) return false;
+	bool r = (get_time() - inst->start_time) > inst->time_limit;
+	if (r) debug(50, "Out of time!\n");
+	return r;
 }
