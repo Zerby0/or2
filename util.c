@@ -1,5 +1,6 @@
 #include "tsp.h"
 #include <stdlib.h>
+#include <time.h>
 
 void swap(int* a, int pos1, int pos2) {
     int temp = a[pos1];
@@ -37,4 +38,8 @@ void list_d_push(list_d *l, double val) {
 		l->buf = (double*) realloc(l->buf, l->capacity * sizeof(double));
 	}
 	l->buf[l->len++] = val;
+}
+
+double get_time() {
+	return clock() / (double) CLOCKS_PER_SEC;
 }

@@ -12,6 +12,8 @@
 	else if (strcmp(argv[i], name) == 0) inst->field = argv[++i]
 #define _argb(name, field) \
 	else if (strcmp(argv[i], name) == 0) inst->field = true
+#define _argf(name, field) \
+	else if (strcmp(argv[i], name) == 0) inst->field = atof(argv[++i])
 
 int parse_arguments(int argc, char *argv[], instance *inst) {
 	inst->seed = time(NULL);
@@ -24,8 +26,6 @@ int parse_arguments(int argc, char *argv[], instance *inst) {
 		_argi("-n", num_nodes);
 		_argi("--num-nodes", num_nodes);
 		_argi("--seed", seed);
-		_argi("-t", time_limit);
-		_argi("--time", time_limit);
 		_args("-f", file);
 		_args("--file", file);
 		_args("-s", solver);
@@ -33,6 +33,8 @@ int parse_arguments(int argc, char *argv[], instance *inst) {
 		_argb("-2", two_opt);
 		_argb("--two-opt", two_opt);
 		_argb("--plot-cost", plot_cost);
+		_argf("-t", time_limit);
+		_argf("--time-limit", time_limit);
 		else {
 			fprintf(stderr, "Unknown option: %s\n", argv[i]);
 			return -1;
@@ -57,7 +59,6 @@ int solve_instance(instance *inst) {
 int main(int argc, char *argv[]) {
     instance inst_data = {0};
 	instance* inst = &inst_data;
-    clock_t t1,t2; // we must use the world time instead of the cpu time because if the cpu is busy the time will be slower (or parallelize the code)
 
 	if (parse_arguments(argc, argv, inst) == -1) return -1;
 	srand(inst->seed);
@@ -65,17 +66,16 @@ int main(int argc, char *argv[]) {
 	if (parse_tsp_file(inst, inst->file) == -1) return -1;
     debug(10, "Data collected, instance size: %d\n", inst->num_nodes);
 
-    t1 = clock();
+	inst->start_time = get_time();
 	if (solve_instance(inst) == -1) return -1;
-    t2 = clock();
-    double took = (double)(t2 - t1) / CLOCKS_PER_SEC;
-	printf("%f\n", inst->sol_cost);
+    double took = get_time() - inst->start_time;
     debug(5, "Time: %fs\n", took);
+	printf("%f\n", inst->sol_cost);
 
 	if (inst->plot_cost && inst->iter_costs.len > 0)
 		plot_cost_iteration(inst->iter_costs.buf, inst->iter_costs.len);
     plot_instance(inst);
-    debug(10, "Data plotted\n");
+    debug(20, "Data plotted\n");
 
     return 0;
 }
