@@ -61,17 +61,31 @@ void variable_neigh_search(instance* inst) {
 	double cost = inst->sol_cost;
 	if (inst->plot_cost) list_d_init(&inst->iter_costs);
 	int iter = 1, num_3opts = 0;
+	const int MIN_K = 2, MAX_K = 7;
+	int k = MIN_K;
+	double prev_cost = cost;
 	while(!is_out_of_time(inst)) {
-		for (int i = 0; i < 3; i++)
+		// make a kick
+		for (int i = 0; i < k; i++)
 			random_3opt(inst, tour, &cost);
 		num_3opts++, iter++;
 		if (inst->plot_cost) list_d_push(&inst->iter_costs, cost);
+		// local search with 2opt
 		while (two_opt_once(inst, tour, &cost) && !is_out_of_time(inst)) {
 			iter++;
 			if (inst->plot_cost) list_d_push(&inst->iter_costs, cost);
 		}
-		debug(60, "VNS iteration %d, cost = %.2f\n", iter, cost);
 		update_sol(inst, tour, cost);
+		// update k
+		if (cost < prev_cost - EPS_COST) {
+			k = MIN_K;
+		} else if (cost > prev_cost + EPS_COST) {
+			k = max(MIN_K, MIN_K + (k - MIN_K) / 2);
+		} else {
+			k = min(MAX_K, k + 1);
+		}
+		debug(60, "VNS iteration %d, cost = %f -> %f, k = %d\n", iter, prev_cost, cost, k);
+		prev_cost = cost;
 	}
-	debug(40, "VNS: ran for %d iterations, did %d 3-opts, final cost: %f\n", iter, num_3opts, cost);
+	debug(40, "VNS: ran for %d iterations, did %d kicks, final cost: %f\n", iter, num_3opts, cost);
 }
