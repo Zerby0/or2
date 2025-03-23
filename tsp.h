@@ -67,6 +67,7 @@ void extra_milage(instance* inst);
 bool two_opt_once(const instance* inst, int* tour, double* cost);
 void two_opt(instance* inst);
 void variable_neigh_search(instance* inst);
+void random_3opt(const instance* inst, int* tour, double* cost);
 
 // utility macros
 

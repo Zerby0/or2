@@ -27,21 +27,23 @@ void random_3opt(const instance* inst, int* tour, double* cost) {
     int move = rand() % 4;
     debug(80, "3-opt kick type %d: %d %d %d\n", move, h, j, k);
     
+	//tolgono i segmenti (j,h), (j+1,j+2), (k+1,k+2)
     switch (move) {
         case 0:
             invert_subtour(tour, h, j);
-            invert_subtour(tour, j, k);
+            invert_subtour(tour, j + 1, k);
             break;
         case 1:
-            invert_subtour(tour, h, j);
-            invert_subtour(tour, k, inst->num_nodes - 1);
+            invert_subtour(tour, k, j);
+            invert_subtour(tour, k-1, h);
             break;
         case 2:
-            invert_subtour(tour, j, k);
-            invert_subtour(tour, k, inst->num_nodes - 1);
+            invert_subtour(tour, h, j);
+            invert_subtour(tour, h, k);
             break;
         case 3:
-            invert_subtour(tour, h, inst->num_nodes - 1);
+            invert_subtour(tour, j+1, k);
+			invert_subtour(tour, h, k);
             break;
     }
     
@@ -88,4 +90,17 @@ void variable_neigh_search(instance* inst) {
 		prev_cost = cost;
 	}
 	debug(40, "VNS: ran for %d iterations, did %d kicks, final cost: %f\n", iter, num_3opts, cost);
+}
+
+void tabu_search(instance* inst){
+    if (inst->time_limit <= 0) {
+		debug(5, "WARNING: TABU called without time limit\n");
+	}
+    if (inst->sol_cost == INF_COST) {
+		debug(20, "Initializing solution for TABU with nn\n");
+		nearest_neighbor(inst);
+	}
+    int tour[inst->num_nodes];
+	memcpy(tour, inst->sol, inst->num_nodes * sizeof(int));
+	double cost = inst->sol_cost;
 }

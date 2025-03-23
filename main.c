@@ -68,9 +68,17 @@ int main(int argc, char *argv[]) {
 
 	inst->start_time = get_time();
 	if (solve_instance(inst) == -1) return -1;
+	for(int i = 0; i < inst->num_nodes; i++){
+		printf("%d ", inst->sol[i]);
+	}
     double took = get_time() - inst->start_time;
     debug(5, "Time: %fs\n", took);
 	printf("%f\n", inst->sol_cost);
+	//debug random_3opt
+	plot_instance(inst);
+	random_3opt(inst, inst->sol, &inst->sol_cost);
+	plot_instance(inst);
+	//end debug
 
 	if (inst->plot_cost && inst->iter_costs.len > 0)
 		plot_cost_iteration(inst->iter_costs.buf, inst->iter_costs.len);
