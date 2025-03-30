@@ -16,7 +16,7 @@ void gen_random_triplet(int n, int* h, int* j, int* k) {
 	*j = a + b + c - *h - *k;
 }
 
-void random_3opt(const instance* inst, int* tour, double* cost) {
+void random_3opt(const Instance* inst, int* tour, double* cost) {
     if (inst->num_nodes < 6) {
         printf("Error: instance has less than 6 nodes\n");
 		exit(1);
@@ -48,7 +48,7 @@ void random_3opt(const instance* inst, int* tour, double* cost) {
     *cost = compute_tour_cost(inst, tour);
 }
 
-void variable_neigh_search(instance* inst) {
+void variable_neigh_search(Instance* inst) {
 	if (inst->time_limit <= 0) {
 		debug(5, "WARNING: VNS called without time limit\n");
 	}

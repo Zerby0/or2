@@ -5,9 +5,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-bool two_opt_once(const instance* inst, int* tour, double* cost) {
+bool two_opt_best(const Instance* inst, int* tour, bool only_improving, Move* out_move, double* out_delta) {
 	int best_i, best_j;
-	double best_delta = 0;
+	double best_delta = -INF_COST;
 	for (int i = 0; i < inst->num_nodes - 1; i++) {
 		for (int j = i + 1; j < inst->num_nodes; j++) {
 			int a = tour[i];
@@ -24,17 +24,33 @@ bool two_opt_once(const instance* inst, int* tour, double* cost) {
 			}
 		}
 	}
-	if (best_delta < -EPS_COST) {
-		debug(80, "2-opt move: %d <-> %d swapping (%d -- %d, %d -- %d) [%f]\n", best_i, best_j, tour[best_i], tour[best_i + 1], tour[best_j], tour[(best_j + 1) % inst->num_nodes], best_delta);
-		invert_subtour(tour, best_i + 1, best_j);
-		*cost += best_delta;
+	if (only_improving && best_delta >= -EPS_COST) {
+		return false;
+	}
+	out_move->i = best_i;
+	out_move->j = best_j;
+	*out_delta = best_delta;
+	return true;
+}
+
+void two_opt_apply(const Instance* inst, int* tour, double* cost, Move move, double delta) {
+	debug(80, "2-opt move: %d <-> %d swapping (%d -- %d, %d -- %d) [%f]\n", move.i, move.j, tour[move.i], tour[move.i + 1], tour[move.j], tour[(move.j + 1) % inst->num_nodes], delta);
+	invert_subtour(tour, move.i + 1, move.j);
+	*cost += delta;
+}
+
+bool two_opt_once(const Instance* inst, int* tour, double* cost) {
+	Move move;
+	double delta;
+	if (two_opt_best(inst, tour, true, &move, &delta)) {
+		two_opt_apply(inst, tour, cost, move, delta);
 		return true;
 	} else {
 		return false;
 	}
 }
 
-void two_opt(instance* inst) {
+void two_opt(Instance* inst) {
     if (inst->num_nodes < 3) {
         printf("Error: instance has less than 3 nodes\n");
         return;

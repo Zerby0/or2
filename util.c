@@ -1,6 +1,8 @@
 #include "tsp.h"
+
 #include <stdlib.h>
 #include <time.h>
+#include <memory.h>
 
 void swap(int* a, int pos1, int pos2) {
     int temp = a[pos1];
@@ -16,7 +18,7 @@ void invert_subtour(int* tour, int i, int j) {
 	}
 }
 
-double compute_tour_cost(const instance* inst, const int* tour) {
+double compute_tour_cost(const Instance* inst, const int* tour) {
     double cost = 0.0;
     for (int i = 0; i < inst->num_nodes; i++) {
         int a = tour[i];
@@ -26,20 +28,28 @@ double compute_tour_cost(const instance* inst, const int* tour) {
     return cost;
 }
 
-void list_d_init(list_d *l) {
-	l->buf = (double*) malloc(16 * sizeof(double));
-	l->len = 0;
-	l->capacity = 16;
-}
-
-void list_d_push(list_d *l, double val) {
-	if (l->len == l->capacity) {
-		l->capacity *= 2;
-		l->buf = (double*) realloc(l->buf, l->capacity * sizeof(double));
-	}
-	l->buf[l->len++] = val;
-}
-
 double get_time() {
 	return clock() / (double) CLOCKS_PER_SEC;
 }
+
+#define _LIST_IMPL(name, type) \
+	void list_ ## name ## _init(List_ ## name *l) { \
+		l->len = 0; \
+		l->capacity = 16; \
+		l->buf = (type*) malloc(l->capacity * sizeof(type)); \
+	} \
+	void list_ ## name ## _push(List_ ## name *l, type val) { \
+		if (l->len == l->capacity) { \
+			l->capacity *= 2; \
+			l->buf = (type*) realloc(l->buf, l->capacity * sizeof(type)); \
+		} \
+		l->buf[l->len++] = val; \
+	} \
+	void list_ ## name ## _pop_front(List_ ## name *l) { \
+		if (l->len == 0) return; \
+		memmove(l->buf, l->buf + 1, (l->len - 1) * sizeof(type)); \
+		l->len--; \
+	}
+
+_LIST_IMPL(d, double)
+_LIST_IMPL(mv, Move)

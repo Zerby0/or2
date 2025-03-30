@@ -6,13 +6,13 @@
 #include <string.h>
 
 //cost function (distance from node to node)
-double calc_cost(const instance* inst, int i, int j) {
+double calc_cost(const Instance* inst, int i, int j) {
 	double dx = inst->x_coords[i] - inst->x_coords[j];
 	double dy = inst->y_coords[i] - inst->y_coords[j];
 	return sqrt(dx*dx + dy*dy);
 }
 
-int parse_tsp_file(instance *inst, const char* filename) {
+int parse_tsp_file(Instance *inst, const char* filename) {
     if (!filename) {
         fprintf(stderr, "Error: filename is NULL\n");
         return -1;

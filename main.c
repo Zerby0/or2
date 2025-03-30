@@ -15,7 +15,7 @@
 #define _argf(name, field) \
 	else if (strcmp(argv[i], name) == 0) inst->field = atof(argv[++i])
 
-int parse_arguments(int argc, char *argv[], instance *inst) {
+int parse_arguments(int argc, char *argv[], Instance *inst) {
 	inst->seed = time(NULL);
 	inst->file = "data/d198.tsp";
 	inst->solver = "basic";
@@ -43,7 +43,7 @@ int parse_arguments(int argc, char *argv[], instance *inst) {
 	return 0;
 }
 
-int solve_instance(instance *inst) {
+int solve_Instance(Instance *inst) {
 	if (strcmp(inst->solver, "basic") == 0) basic_sol(inst);
 	else if (strcmp(inst->solver, "nn") == 0) nearest_neighbor(inst);
 	else if (strcmp(inst->solver, "em") == 0) extra_milage(inst);
@@ -57,24 +57,24 @@ int solve_instance(instance *inst) {
 }
 
 int main(int argc, char *argv[]) {
-    instance inst_data = {0};
-	instance* inst = &inst_data;
+    Instance inst_data = {0};
+	Instance* inst = &inst_data;
 
 	if (parse_arguments(argc, argv, inst) == -1) return -1;
 	srand(inst->seed);
 
 	if (parse_tsp_file(inst, inst->file) == -1) return -1;
-    debug(10, "Data collected, instance size: %d\n", inst->num_nodes);
+    debug(10, "Data collected, Instance size: %d\n", inst->num_nodes);
 
 	inst->start_time = get_time();
-	if (solve_instance(inst) == -1) return -1;
+	if (solve_Instance(inst) == -1) return -1;
     double took = get_time() - inst->start_time;
     debug(5, "Time: %fs\n", took);
 	printf("%f\n", inst->sol_cost);
 
 	if (inst->plot_cost && inst->iter_costs.len > 0)
 		plot_cost_iteration(inst->iter_costs.buf, inst->iter_costs.len);
-    plot_instance(inst);
+    plot_Instance(inst);
     debug(20, "Data plotted\n");
 
     return 0;
