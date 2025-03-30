@@ -101,7 +101,6 @@ void cuckoo_free(CuckooHash* hash) {
     free(hash->stash);
     free(hash->occupied1);
     free(hash->occupied2);
-    free(hash);
 }
 
 // Check if an object exists in the hash table

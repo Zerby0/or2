@@ -66,6 +66,7 @@ void two_opt_apply(const Instance* inst, int* tour, double* cost, Move move, dou
 bool two_opt_once(const Instance* inst, int* tour, double* cost);
 void two_opt(Instance* inst);
 void variable_neigh_search(Instance* inst);
+void tabu_search(Instance* inst);
 
 // utility macros
 

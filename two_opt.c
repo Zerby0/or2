@@ -7,7 +7,7 @@
 
 bool two_opt_best(const Instance* inst, int* tour, bool only_improving, Move* out_move, double* out_delta) {
 	int best_i, best_j;
-	double best_delta = -INF_COST;
+	double best_delta = INF_COST;
 	for (int i = 0; i < inst->num_nodes - 1; i++) {
 		for (int j = i + 1; j < inst->num_nodes; j++) {
 			int a = tour[i];
