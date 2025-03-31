@@ -46,6 +46,7 @@ int parse_arguments(int argc, char *argv[], Instance *inst) {
 int solve_Instance(Instance *inst) {
 	if (strcmp(inst->solver, "basic") == 0) basic_sol(inst);
 	else if (strcmp(inst->solver, "nn") == 0) nearest_neighbor(inst);
+	else if (strcmp(inst->solver, "nna") == 0) nearest_neighbor_all_starts(inst);
 	else if (strcmp(inst->solver, "em") == 0) extra_milage(inst);
 	else if (strcmp(inst->solver, "vns") == 0) variable_neigh_search(inst);
 	else if (strcmp(inst->solver, "tabu") == 0) tabu_search(inst);

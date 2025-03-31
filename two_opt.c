@@ -50,20 +50,26 @@ bool two_opt_once(const Instance* inst, int* tour, double* cost) {
 	}
 }
 
+void two_opt_from(const Instance* inst, int* tour, double* cost) {
+	int iter = 0;
+	while (two_opt_once(inst, tour, cost) && !is_out_of_time(inst)) {
+		iter++;
+	}
+	debug(40, "2-opt: %d iterations, cost: %f\n", iter, *cost);
+}
+
 void two_opt(Instance* inst) {
     if (inst->num_nodes < 3) {
         printf("Error: instance has less than 3 nodes\n");
         return;
     }
+	if (inst->sol_cost == INF_COST) {
+		fprintf(stderr, "Error: 2-opt: no solution yet\n");
+		exit(1);
+	}
     int tour[inst->num_nodes];
 	memcpy(tour, inst->sol, inst->num_nodes * sizeof(int));
 	double cost = inst->sol_cost;
-	int iter = 0;
-	if (inst->plot_cost) list_d_init(&inst->iter_costs);
-	while (two_opt_once(inst, tour, &cost) && !is_out_of_time(inst)) {
-		iter++;
-		if (inst->plot_cost) list_d_push(&inst->iter_costs, cost);
-	}
-	debug(40, "2-opt: %d iterations, cost: %f\n", iter, cost);
+	two_opt_from(inst, tour, &cost);
     update_sol(inst, tour, cost);
 }

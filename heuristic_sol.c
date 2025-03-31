@@ -6,8 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-void nearest_neighbor_from(Instance* inst, int start) {
-    int tour[inst->num_nodes];
+double nearest_neighbor_from(const Instance* inst, int* tour, int start) {
     for(int i = 0; i < inst->num_nodes; i++) {
         tour[i] = i;
     }
@@ -31,12 +30,27 @@ void nearest_neighbor_from(Instance* inst, int start) {
     }
 	int last_node = tour[inst->num_nodes - 1];
     tot_cost += get_cost(inst, last_node, start);
-    update_sol(inst, tour, tot_cost);
+	return tot_cost;
 }
 
 void nearest_neighbor(Instance* inst) {
 	int start = rand() % inst->num_nodes;
-	nearest_neighbor_from(inst, start);
+	int tour[inst->num_nodes];
+	double c = nearest_neighbor_from(inst, tour, start);
+	update_sol(inst, tour, c);
+}
+
+void nearest_neighbor_all_starts(Instance* inst) {
+	int tour[inst->num_nodes];
+	int s0 = rand() % inst->num_nodes;
+	for (int delta = 0; delta < inst->num_nodes && !is_out_of_time(inst); delta++) {
+		int start = (s0 + delta) % inst->num_nodes;
+		double c = nearest_neighbor_from(inst, tour, start);
+		if (inst->two_opt)
+			two_opt_from(inst, tour, &c);
+		debug(50, "NN from %d: cost = %f\n", start, c);
+		update_sol(inst, tour, c);
+	}
 }
 
 // inserts into `arr` currently of length `len` at position `pos` the value `value` in O(len)
