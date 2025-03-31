@@ -53,3 +53,4 @@ double get_time() {
 
 _LIST_IMPL(d, double)
 _LIST_IMPL(mv, Move)
+_LIST_IMPL(tm, TabuMove)

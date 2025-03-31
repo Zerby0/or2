@@ -37,9 +37,16 @@ typedef struct {
 } Instance;
 
 typedef struct {
+	// indexes in the tour array, sorted
 	int i, j;
 } Move;
 _LIST_DEF(mv, Move)
+
+typedef struct {
+	// verticies ids, sorted
+	int a, b, c, d;
+} TabuMove;
+_LIST_DEF(tm, TabuMove);
 
 double get_time();
 bool is_out_of_time(const Instance* inst);
@@ -55,7 +62,7 @@ int plot_partial_sol(const Instance* inst, const int* sol, int len);
 void plot_cost_iteration(double* cost, int len);
 void save_cost_to_file(const char* filename, int iteration, double cost);
 
-void update_sol(Instance* inst, int* tour, double cost);
+bool update_sol(Instance* inst, int* tour, double cost);
 double get_cost(const Instance* inst, int i, int j);
 
 void basic_sol(Instance* inst);
