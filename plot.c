@@ -2,7 +2,7 @@
 
 #include <stdio.h>
 
-int plot_partial_sol(const instance* inst, const int* sol, int len) {
+int plot_partial_sol(const Instance* inst, const int* sol, int len) {
     double min_x = inst->x_coords[0], max_x = inst->x_coords[0];
 	double min_y = inst->y_coords[0], max_y = inst->y_coords[0];
     for (int i = 0; i < inst->num_nodes; i++) {
@@ -50,11 +50,11 @@ int plot_partial_sol(const instance* inst, const int* sol, int len) {
 	return 0;
 }
 
-int plot_solution(const instance* inst, const int* sol) {
+int plot_solution(const Instance* inst, const int* sol) {
 	return plot_partial_sol(inst, sol, inst->num_nodes);
 }
 
-int plot_instance(instance* inst) {
+int plot_Instance(Instance* inst) {
 	return plot_partial_sol(inst, inst->sol, inst->num_nodes);
 }
 

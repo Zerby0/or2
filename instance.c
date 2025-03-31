@@ -5,7 +5,7 @@
 #include <memory.h>
 #include <stdio.h>
 
-bool check_sol(const instance* inst, int* tour, double cost) {
+bool check_sol(const Instance* inst, int* tour, double cost) {
 	int count[inst->num_nodes];
 	memset(count, 0, sizeof(int) * inst->num_nodes);
 	for (int i = 0; i < inst->num_nodes; i++) {
@@ -30,7 +30,7 @@ bool check_sol(const instance* inst, int* tour, double cost) {
 	return true;
 }
 
-void update_sol(instance* inst, int* tour, double cost) {
+void update_sol(Instance* inst, int* tour, double cost) {
 	assert(tour != NULL);
 	assert(check_sol(inst, tour, cost));
 	if (inst->sol_cost <= cost) return;
@@ -40,13 +40,13 @@ void update_sol(instance* inst, int* tour, double cost) {
 	debug(50, "New sol cost: %f\n", cost);
 }
 
-double get_cost(const instance* inst, int i, int j) {
+double get_cost(const Instance* inst, int i, int j) {
 	assert(0 <= i && i < inst->num_nodes);
 	assert(0 <= j && j < inst->num_nodes);
 	return inst->costs_array[i * inst->num_nodes + j];
 }
 
-bool is_out_of_time(const instance* inst) {
+bool is_out_of_time(const Instance* inst) {
 	if (inst->time_limit <= 0) return false;
 	bool r = (get_time() - inst->start_time) > inst->time_limit;
 	if (r) debug(50, "Out of time!\n");

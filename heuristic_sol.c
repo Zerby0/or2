@@ -5,7 +5,7 @@
 #include <memory.h>
 #include <string.h>
 
-void nearest_neighbor_from(instance* inst, int start) {
+void nearest_neighbor_from(Instance* inst, int start) {
     int tour[inst->num_nodes];
     for(int i = 0; i < inst->num_nodes; i++) {
         tour[i] = i;
@@ -33,7 +33,7 @@ void nearest_neighbor_from(instance* inst, int start) {
     update_sol(inst, tour, tot_cost);
 }
 
-void nearest_neighbor(instance* inst) {
+void nearest_neighbor(Instance* inst) {
 	nearest_neighbor_from(inst, 0);
 }
 
@@ -43,7 +43,7 @@ void array_insert(int* arr, int len, int pos, int value) {
 	arr[pos] = value;
 }
 
-double find_max_segment(const instance* inst, int* max_start, int* max_end) {
+double find_max_segment(const Instance* inst, int* max_start, int* max_end) {
 	double max_dist = 0;
 	*max_start = *max_end = -1;
 	for (int i = 0; i < inst->num_nodes; i++) {
@@ -66,7 +66,7 @@ double find_max_segment(const instance* inst, int* max_start, int* max_end) {
     the time complexity is O(n^3) because you have to check every node for every node
 
 */
-void extra_milage(instance* inst) {
+void extra_milage(Instance* inst) {
 	int max_start, max_end;
 	double max_dist = find_max_segment(inst, &max_start, &max_end);
 	int tour[inst->num_nodes + 1];

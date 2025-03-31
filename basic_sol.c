@@ -1,6 +1,6 @@
 #include "tsp.h"
 
-void basic_sol(instance* inst) {
+void basic_sol(Instance* inst) {
 	int tour[inst->num_nodes];
 	double cost = 0;
     for (int i = 0; i < inst->num_nodes; i++) {

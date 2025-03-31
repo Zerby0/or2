@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdbool.h>
+#include "list.h"
 
 #ifndef TSP_H
 #define TSP_H
@@ -8,12 +9,6 @@
 //define infinite for the cost INF_COST 1e38
 static const double EPS_COST = 1e-5;
 static const double INF_COST = 1e38;
-
-typedef struct {
-	double* buf;
-	int len;
-	int capacity;
-} list_d;
 
 typedef struct {
 	// parameters
@@ -34,40 +29,44 @@ typedef struct {
 	double sol_cost;   // cost of the best solution
 	double start_time; // time when the program started, to check OOT
 	// debugging data
-	list_d iter_costs; // list of costs per iteration
+	List_d iter_costs; // list of costs per iteration
 
     //using a single data structure to store the coordinates of the pts can
     //be more efficient so the ram can do only one operation (the data separated are very far on the ram)
     //we should try to be very close to maximise the efficency 
-} instance;
+} Instance;
+
+typedef struct {
+	int i, j;
+} Move;
+_LIST_DEF(mv, Move)
 
 double get_time();
-bool is_out_of_time(const instance* inst);
-
-void list_d_init(list_d* l);
-void list_d_push(list_d* l, double val);
+bool is_out_of_time(const Instance* inst);
 
 void swap(int* a, int pos1, int pos2);
 void invert_subtour(int* tour, int i, int j);
-double compute_tour_cost(const instance* inst, const int* tour); // O(n)
+double compute_tour_cost(const Instance* inst, const int* tour); // O(n)
 
-int parse_tsp_file(instance *inst, const char* filename); 
-int plot_instance(instance* inst);
-int plot_solution(const instance* inst, const int* sol);
-int plot_partial_sol(const instance* inst, const int* sol, int len);
+int parse_tsp_file(Instance *inst, const char* filename); 
+int plot_Instance(Instance* inst);
+int plot_solution(const Instance* inst, const int* sol);
+int plot_partial_sol(const Instance* inst, const int* sol, int len);
 void plot_cost_iteration(double* cost, int len);
 void save_cost_to_file(const char* filename, int iteration, double cost);
 
-void update_sol(instance* inst, int* tour, double cost);
-double get_cost(const instance* inst, int i, int j);
+void update_sol(Instance* inst, int* tour, double cost);
+double get_cost(const Instance* inst, int i, int j);
 
-void basic_sol(instance* inst);
-void nearest_neighbor(instance* inst);
-void extra_milage(instance* inst);
-bool two_opt_once(const instance* inst, int* tour, double* cost);
-void two_opt(instance* inst);
-void variable_neigh_search(instance* inst);
-void random_3opt(const instance* inst, int* tour, double* cost);
+void basic_sol(Instance* inst);
+void nearest_neighbor(Instance* inst);
+void extra_milage(Instance* inst);
+bool two_opt_best(const Instance* inst, int* tour, bool only_improving, Move* out_move, double* out_delta);
+void two_opt_apply(const Instance* inst, int* tour, double* cost, Move move, double delta);
+bool two_opt_once(const Instance* inst, int* tour, double* cost);
+void two_opt(Instance* inst);
+void variable_neigh_search(Instance* inst);
+void tabu_search(Instance* inst);
 
 // utility macros
 
