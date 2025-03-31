@@ -30,14 +30,15 @@ bool check_sol(const Instance* inst, int* tour, double cost) {
 	return true;
 }
 
-void update_sol(Instance* inst, int* tour, double cost) {
+bool update_sol(Instance* inst, int* tour, double cost) {
 	assert(tour != NULL);
 	assert(check_sol(inst, tour, cost));
-	if (inst->sol_cost <= cost) return;
+	if (inst->sol_cost <= cost) return false; // no update
 	memcpy(inst->sol, tour, sizeof(int) * inst->num_nodes);
 	inst->sol[inst->num_nodes] = inst->sol[0]; // loop back
 	inst->sol_cost = cost;
 	debug(50, "New sol cost: %f\n", cost);
+	return true;
 }
 
 double get_cost(const Instance* inst, int i, int j) {

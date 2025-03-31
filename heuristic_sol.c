@@ -3,6 +3,7 @@
 #include <math.h>
 #include <stdbool.h>
 #include <memory.h>
+#include <stdlib.h>
 #include <string.h>
 
 void nearest_neighbor_from(Instance* inst, int start) {
@@ -34,7 +35,8 @@ void nearest_neighbor_from(Instance* inst, int start) {
 }
 
 void nearest_neighbor(Instance* inst) {
-	nearest_neighbor_from(inst, 0);
+	int start = rand() % inst->num_nodes;
+	nearest_neighbor_from(inst, start);
 }
 
 // inserts into `arr` currently of length `len` at position `pos` the value `value` in O(len)
