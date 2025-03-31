@@ -16,9 +16,10 @@
 	else if (strcmp(argv[i], name) == 0) inst->field = atof(argv[++i])
 
 int parse_arguments(int argc, char *argv[], Instance *inst) {
-	inst->seed = time(NULL);
+	inst->seed = 0;
 	inst->file = "data/d198.tsp";
 	inst->solver = "basic";
+	
     for (int i = 1; i < argc; i++) {
 		if (0);
 		_argi("-v", verbose);
@@ -28,6 +29,8 @@ int parse_arguments(int argc, char *argv[], Instance *inst) {
 		_argi("--seed", seed);
 		_args("-f", file);
 		_args("--file", file);
+		_argb("-r", random_inst);
+		_argb("--random", random_inst);
 		_args("-s", solver);
 		_args("--solver", solver);
 		_argb("-2", two_opt);
@@ -63,11 +66,13 @@ int main(int argc, char *argv[]) {
 	Instance* inst = &inst_data;
 
 	if (parse_arguments(argc, argv, inst) == -1) return -1;
-	srand(inst->seed);
+	if (inst->random_inst) {if (inst->random_inst) random_inst(inst);}
+	else {if (parse_tsp_file(inst, inst->file) == -1) return -1;}
 
-	if (parse_tsp_file(inst, inst->file) == -1) return -1;
     debug(10, "Data collected, Instance size: %d\n", inst->num_nodes);
-
+	
+	srand(inst->seed);
+	
 	inst->start_time = get_time();
 	if (solve_Instance(inst) == -1) return -1;
     double took = get_time() - inst->start_time;
@@ -78,7 +83,7 @@ int main(int argc, char *argv[]) {
 		plot_cost_iteration(inst->iter_costs.buf, inst->iter_costs.len);
     plot_Instance(inst);
     debug(20, "Data plotted\n");
-
+	
     return 0;
 }
 

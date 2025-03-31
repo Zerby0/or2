@@ -1,5 +1,5 @@
 #include "tsp.h"
-
+#include <math.h>
 #include <stdlib.h>
 #include <time.h>
 #include <memory.h>
@@ -54,3 +54,36 @@ double get_time() {
 _LIST_IMPL(d, double)
 _LIST_IMPL(mv, Move)
 _LIST_IMPL(tm, TabuMove)
+
+void random_points(Instance* inst) {
+    srand(inst->seed);
+    
+    for (int i = 0; i < inst->num_nodes; i++) {
+		inst->x_coords[i] = (double)rand() / RAND_MAX * 1000;
+		debug(40, "number on %d coord x is %f\n", i, inst->x_coords[i]);
+		inst->y_coords[i] = (double)rand() / RAND_MAX * 1000;
+		debug(40, "number on %d coord y is %f\n", i, inst->y_coords[i]);
+    }
+}
+
+void random_inst(Instance* inst) {
+	inst->x_coords = (double*) malloc(inst->num_nodes * sizeof(double));
+	inst->y_coords = (double*) malloc(inst->num_nodes * sizeof(double));
+	random_points(inst);
+	
+	inst->costs_array = (double*) malloc(inst->num_nodes * inst->num_nodes * sizeof(double));
+	for (int i = 0; i < inst->num_nodes; i++) {
+		for (int j = 0; j < inst->num_nodes; j++) {
+			if (i != j) {
+				double dx = inst->x_coords[i] - inst->x_coords[j];
+				double dy = inst->y_coords[i] - inst->y_coords[j];
+				inst->costs_array[i * inst->num_nodes + j] = sqrt(dx * dx + dy * dy);
+			} else {
+				inst->costs_array[i * inst->num_nodes + j] = INF_COST;
+			}
+		}
+	}
+	
+	inst->sol = (int*) malloc((inst->num_nodes + 1) * sizeof(int));
+	inst->sol_cost = INF_COST;
+}

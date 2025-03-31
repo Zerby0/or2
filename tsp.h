@@ -17,6 +17,7 @@ typedef struct {
     int seed;          // Seed for random number generation (if used)
     double time_limit; // Time limit for solving the problem
 	char* solver;      // Solver algorithm to use
+    bool random_inst;  // Generate random instance
 	bool two_opt;      // Apply two-opt algorithm after the solver
 	bool plot_cost;    // plot the cost of the solution per iteration
 	// input data
@@ -55,7 +56,8 @@ void swap(int* a, int pos1, int pos2);
 void invert_subtour(int* tour, int i, int j);
 double compute_tour_cost(const Instance* inst, const int* tour); // O(n)
 
-int parse_tsp_file(Instance *inst, const char* filename); 
+int parse_tsp_file(Instance *inst, const char* filename);
+void random_inst(Instance* inst);
 int plot_Instance(Instance* inst);
 int plot_solution(const Instance* inst, const int* sol);
 int plot_partial_sol(const Instance* inst, const int* sol, int len);
