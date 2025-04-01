@@ -94,7 +94,7 @@ void extra_milage(Instance* inst) {
 	bool used[inst->num_nodes];
 	memset(used, false, sizeof(bool) * inst->num_nodes);
 	used[max_start] = used[max_end] = true;
-	while (count < inst->num_nodes) {
+	while (count < inst->num_nodes && !is_out_of_time(inst)) {
 		// for node to insert in the tour
 		double min_cost = INFINITY;
 		int min_h = -1, min_pos = -1;
@@ -122,6 +122,16 @@ void extra_milage(Instance* inst) {
 		used[min_h] = true;
 		if (inst->verbose >= 90)
 			plot_partial_sol(inst, tour, count);
+	}
+	if (is_out_of_time(inst) && count < inst->num_nodes) {
+		debug(30, "Extra-milage: out of time before completing the tour, completing with a random solution\n");
+		for (int h = 0; h < inst->num_nodes; h++) {
+			if (used[h]) continue;
+			tour[count++] = h;
+			used[h] = true;
+		}
+		tot_cost = compute_tour_cost(inst, tour);
+		assert(count == inst->num_nodes);
 	}
 	update_sol(inst, tour, tot_cost);
 }
