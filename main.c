@@ -72,6 +72,9 @@ int main(int argc, char *argv[]) {
     debug(10, "Data collected, Instance size: %d\n", inst->num_nodes);
 	
 	srand(inst->seed);
+
+	//generate file .txt for performance profile plot (alg prof python)
+	perf_prof_gen(inst);
 	
 	inst->start_time = get_time();
 	if (solve_Instance(inst) == -1) return -1;
@@ -86,6 +89,7 @@ int main(int argc, char *argv[]) {
 	
     return 0;
 }
+
 
 //First thing to implement: check feasibility of a solution using a counter array
 /*Have to check if a permutation of 1 to n is in the array sol 

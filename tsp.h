@@ -64,6 +64,7 @@ int plot_partial_sol(const Instance* inst, const int* sol, int len);
 void plot_cost_iteration(double* cost, int len);
 void save_cost_to_file(const char* filename, int iteration, double cost);
 
+int solve_Instance(Instance* inst);
 bool update_sol(Instance* inst, int* tour, double cost);
 double get_cost(const Instance* inst, int i, int j);
 
@@ -79,6 +80,7 @@ void two_opt(Instance* inst);
 void variable_neigh_search(Instance* inst);
 void tabu_search(Instance* inst);
 
+void perf_prof_gen(Instance* inst);
 // utility macros
 
 #define debug(level, ...) \
