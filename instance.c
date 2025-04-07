@@ -4,6 +4,38 @@
 #include <math.h>
 #include <memory.h>
 #include <stdio.h>
+#include <stdlib.h>
+
+void free_instance_data(Instance* inst) {
+	debug(60, "Freeing instance data\n");
+	if (inst->x_coords) free(inst->x_coords);
+	if (inst->y_coords) free(inst->y_coords);
+	if (inst->costs_array) free(inst->costs_array);
+	if (inst->sol) free(inst->sol);
+	inst->x_coords = NULL;
+	inst->y_coords = NULL;
+	inst->costs_array = NULL;
+	inst->sol = NULL;
+}
+
+int init_instance_data(Instance* inst) {
+	if (inst->num_nodes <= 0) {
+		fprintf(stderr, "Error: num_nodes is not set\n");
+		return -1;
+	}
+	debug(60, "Allocating instance data for %d nodes\n", inst->num_nodes);
+	int n = inst->num_nodes;
+	inst->sol = (int*) malloc((n + 1) * sizeof(int));
+    inst->costs_array = (double*) malloc(n * n * sizeof(double));
+	inst->x_coords = (double*) malloc(n * sizeof(double));
+	inst->y_coords = (double*) malloc(n * sizeof(double));
+	if (!inst->x_coords || !inst->y_coords || !inst->costs_array || !inst->sol) {
+		fprintf(stderr, "Error: malloc failed\n");
+		free_instance_data(inst);
+		return -1;
+	}
+	return 0;
+}
 
 bool check_sol(const Instance* inst, int* tour, double cost) {
 	int count[inst->num_nodes];

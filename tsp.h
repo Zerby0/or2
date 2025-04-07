@@ -58,14 +58,16 @@ void invert_subtour(int* tour, int i, int j);
 double compute_tour_cost(const Instance* inst, const int* tour); // O(n)
 
 int parse_tsp_file(Instance *inst, const char* filename);
-void random_inst(Instance* inst);
+void random_inst_data(Instance* inst);
 int plot_Instance(Instance* inst);
 int plot_solution(const Instance* inst, const int* sol);
 int plot_partial_sol(const Instance* inst, const int* sol, int len);
 void plot_cost_iteration(double* cost, int len);
 void save_cost_to_file(const char* filename, int iteration, double cost);
 
-int solve_Instance(Instance* inst);
+int init_instance_data(Instance* inst);
+void free_instance_data(Instance* inst);
+int solve_instance(Instance* inst);
 bool update_sol(Instance* inst, int* tour, double cost);
 double get_cost(const Instance* inst, int i, int j);
 
@@ -81,7 +83,7 @@ void two_opt(Instance* inst);
 void variable_neigh_search(Instance* inst);
 void tabu_search(Instance* inst);
 
-void perf_prof_gen(Instance* inst);
+void run_perf_profile(Instance* inst);
 // utility macros
 
 #define debug(level, ...) \

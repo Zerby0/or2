@@ -29,9 +29,10 @@ int parse_tsp_file(Instance *inst, const char* filename) {
     while (fgets(line, sizeof(line), file)) {
         if (header) {
             if (sscanf(line, "DIMENSION : %d", &inst->num_nodes) == 1) {
-                inst->x_coords = (double*) malloc(inst->num_nodes * sizeof(double));  //alternative to calloc (everything is set to 0)
-                inst->y_coords = (double*) malloc(inst->num_nodes * sizeof(double));
-                //I can make an if() to check if the malloc was successful
+				// we can init the instance data only after we have read `num_nodes`
+				if (init_instance_data(inst) == -1) {
+					return -1;
+				}
             }
             else if (sscanf(line, "EDGE_WEIGHT_TYPE : %255s", weight_type) == 1) { 
                 if (strcmp(weight_type, "EUC_2D") != 0) {

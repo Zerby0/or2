@@ -66,7 +66,7 @@ void random_points(Instance* inst) {
     }
 }
 
-void random_inst(Instance* inst) {
+void random_inst_data(Instance* inst) {
 	inst->x_coords = (double*) malloc(inst->num_nodes * sizeof(double));
 	inst->y_coords = (double*) malloc(inst->num_nodes * sizeof(double));
 	random_points(inst);

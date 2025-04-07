@@ -47,7 +47,7 @@ int parse_arguments(int argc, char *argv[], Instance *inst) {
 	return 0;
 }
 
-int solve_Instance(Instance *inst) {
+int solve_instance(Instance *inst) {
 	if (strcmp(inst->solver, "basic") == 0) basic_sol(inst);
 	else if (strcmp(inst->solver, "nn") == 0) nearest_neighbor(inst);
 	else if (strcmp(inst->solver, "nna") == 0) nearest_neighbor_all_starts(inst);
@@ -70,21 +70,24 @@ int main(int argc, char *argv[]) {
 		return -1;
 
 	if (inst->perf_profile) {
-		perf_prof_gen(inst);
+		run_perf_profile(inst);
 		return 0;
 	}
 
 	if (inst->random_inst) {
-		random_inst(inst);
+		init_instance_data(inst);
+		random_inst_data(inst);
 	} else {
-		if (parse_tsp_file(inst, inst->file) == -1)
+		if (parse_tsp_file(inst, inst->file) == -1) {
+			free_instance_data(inst);
 			return -1;
+		}
 	}
     debug(10, "Data collected, Instance size: %d\n", inst->num_nodes);
 	srand(inst->seed);
 	
 	inst->start_time = get_time();
-	if (solve_Instance(inst) == -1) return -1;
+	if (solve_instance(inst) == -1) return -1;
     double took = get_time() - inst->start_time;
     debug(5, "Time: %fs\n", took);
 	printf("%f\n", inst->sol_cost);
@@ -94,6 +97,7 @@ int main(int argc, char *argv[]) {
     plot_Instance(inst);
     debug(20, "Data plotted\n");
 	
+	free_instance_data(inst);
     return 0;
 }
 
