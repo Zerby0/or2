@@ -20,7 +20,7 @@ int xpos(const Instance *inst, int i, int j) {
 	assert(i >= 0 && i < inst->num_nodes);
 	assert(j >= 0 && j < inst->num_nodes);
 	assert(i != j);
-	// Ensure i < j
+	// ensure i < j
 	if (i > j) {
 		int temp = i;
 		i = j;
@@ -233,6 +233,10 @@ void benders_method(Instance *inst) {
 		debug(30, "CPLEX took %f seconds\n", elapsed);
 
 		int status = CPXgetstat(env, lp);
+		if (status == CPXMIP_TIME_LIM_FEAS || status == CPXMIP_TIME_LIM_INFEAS) {
+			// TODO: use the patch heuristic to get a feasible solution
+			fatal_error("MIP optimization timed out\n");
+		}
 		if (!(status == CPXMIP_OPTIMAL || status == CPXMIP_OPTIMAL_TOL || status == CPXMIP_FEASIBLE)) {
 			fatal_error("MIP optimization failed with status %d\n", status);
 		}
@@ -242,7 +246,7 @@ void benders_method(Instance *inst) {
 		_c(CPXgetx(env, lp, xstar, 0, num_cols - 1));
 
 		find_cycles(inst, xstar, &cycles);
-		debug(30, "Found %d component(s)\n", cycles.ncomp);
+		debug(30, "Found %d component(s), lowerbound = %f\n", cycles.ncomp, objval);
 
 		if (cycles.ncomp == 1) {
 			// only one cycle -> valid tour

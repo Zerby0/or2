@@ -92,6 +92,10 @@ int main(int argc, char *argv[]) {
 	if (solve_instance(inst) == -1) return -1;
     double took = get_time() - inst->start_time;
     debug(5, "Time: %fs\n", took);
+
+	if (inst->sol_cost == INF_COST) {
+		fatal_error("No solution found\n");
+	}
 	printf("%f\n", inst->sol_cost);
 
 	if (inst->plot_cost && inst->iter_costs.len > 0)
