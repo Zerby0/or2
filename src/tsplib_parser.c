@@ -61,12 +61,8 @@ int parse_tsp_file(Instance *inst, const char* filename) {
     }
     fclose(file);
 
-	// space for the solution
-	inst->sol = (int*) malloc((inst->num_nodes + 1) * sizeof(int));
 	inst->sol_cost = INF_COST;
-
-    // Precompute the cost array
-    inst->costs_array = (double*) malloc(inst->num_nodes * inst->num_nodes * sizeof(double));
+    // precompute the cost array
     for (int i = 0; i < inst->num_nodes; i++) {
         for (int j = 0; j < inst->num_nodes; j++) {
             inst->costs_array[i * inst->num_nodes + j] = calc_cost(inst, i, j);

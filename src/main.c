@@ -79,11 +79,13 @@ int main(int argc, char *argv[]) {
 	if (inst->random_inst) {
 		init_instance_data(inst);
 		random_inst_data(inst);
-	} else {
+	} else if (inst->file != NULL) {
 		if (parse_tsp_file(inst, inst->file) == -1) {
 			free_instance_data(inst);
 			return -1;
 		}
+	} else {
+		fatal_error("No input specified\n");
 	}
     debug(10, "Data collected, Instance size: %d\n", inst->num_nodes);
 	srand(inst->seed);

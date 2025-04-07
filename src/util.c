@@ -66,12 +66,10 @@ void random_points(Instance* inst) {
     }
 }
 
+// fills instance data with random values, assuming it has already been initialized
 void random_inst_data(Instance* inst) {
-	inst->x_coords = (double*) malloc(inst->num_nodes * sizeof(double));
-	inst->y_coords = (double*) malloc(inst->num_nodes * sizeof(double));
 	random_points(inst);
 	
-	inst->costs_array = (double*) malloc(inst->num_nodes * inst->num_nodes * sizeof(double));
 	for (int i = 0; i < inst->num_nodes; i++) {
 		for (int j = 0; j < inst->num_nodes; j++) {
 			if (i != j) {
@@ -84,6 +82,5 @@ void random_inst_data(Instance* inst) {
 		}
 	}
 	
-	inst->sol = (int*) malloc((inst->num_nodes + 1) * sizeof(int));
 	inst->sol_cost = INF_COST;
 }
