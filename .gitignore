@@ -3,3 +3,4 @@
 tsp
 tsp-*
 build/
+build-*/
