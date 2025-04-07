@@ -2,5 +2,4 @@
 .DS_Store
 tsp
 tsp-*
-cost_iter.dat
-perf_prof.txt
+build/

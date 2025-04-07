@@ -20,6 +20,7 @@ typedef struct {
     bool random_inst;  // Generate random instance
 	bool two_opt;      // Apply two-opt algorithm after the solver
 	bool plot_cost;    // plot the cost of the solution per iteration
+	bool perf_profile; // run the performance profiler
 	// input data
     int num_nodes;     // Number of nodes
     double* x_coords;  // Array for x coordinates
@@ -85,7 +86,7 @@ void perf_prof_gen(Instance* inst);
 
 #define debug(level, ...) \
     do { \
-        if (inst->verbose >= level) printf(__VA_ARGS__); \
+        if (inst->verbose >= level) fprintf(stderr, __VA_ARGS__); \
     } while (0)
 
 #define max(a,b)             \

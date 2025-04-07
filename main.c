@@ -16,7 +16,7 @@
 	else if (strcmp(argv[i], name) == 0) inst->field = atof(argv[++i])
 
 int parse_arguments(int argc, char *argv[], Instance *inst) {
-	inst->seed = 0;
+	inst->seed = 42;
 	inst->file = "data/d198.tsp";
 	inst->solver = "basic";
 	
@@ -38,6 +38,7 @@ int parse_arguments(int argc, char *argv[], Instance *inst) {
 		_argb("--plot-cost", plot_cost);
 		_argf("-t", time_limit);
 		_argf("--time-limit", time_limit);
+		_argb("--perf-profile", perf_profile);
 		else {
 			fprintf(stderr, "Unknown option: %s\n", argv[i]);
 			return -1;
@@ -65,16 +66,22 @@ int main(int argc, char *argv[]) {
     Instance inst_data = {0};
 	Instance* inst = &inst_data;
 
-	if (parse_arguments(argc, argv, inst) == -1) return -1;
-	if (inst->random_inst) {if (inst->random_inst) random_inst(inst);}
-	else {if (parse_tsp_file(inst, inst->file) == -1) return -1;}
+	if (parse_arguments(argc, argv, inst) == -1)
+		return -1;
 
+	if (inst->perf_profile) {
+		perf_prof_gen(inst);
+		return 0;
+	}
+
+	if (inst->random_inst) {
+		random_inst(inst);
+	} else {
+		if (parse_tsp_file(inst, inst->file) == -1)
+			return -1;
+	}
     debug(10, "Data collected, Instance size: %d\n", inst->num_nodes);
-	
 	srand(inst->seed);
-
-	//generate file .txt for performance profile plot (alg prof python)
-	perf_prof_gen(inst);
 	
 	inst->start_time = get_time();
 	if (solve_Instance(inst) == -1) return -1;
