@@ -1,5 +1,6 @@
 #include "tsp.h"
 
+#include <assert.h>
 #include <stdio.h>
 
 int plot_partial_sol(const Instance* inst, const int* sol, int len) {
@@ -87,4 +88,63 @@ void plot_cost_iteration(double* costs, int num_costs) {
 	fprintf(pipe, "pause mouse keypress\n");
 	fflush(pipe);
     pclose(pipe);
+}
+
+int plot_infeasible_solution(const Instance* inst, const double* xstar) {
+	assert(inst != NULL && xstar != NULL);
+
+    double min_x = inst->x_coords[0], max_x = inst->x_coords[0];
+    double min_y = inst->y_coords[0], max_y = inst->y_coords[0];
+    for (int i = 1; i < inst->num_nodes; i++) { // Start from 1 as 0 is already used
+        min_x = min(min_x, inst->x_coords[i]);
+        max_x = max(max_x, inst->x_coords[i]);
+        min_y = min(min_y, inst->y_coords[i]);
+        max_y = max(max_y, inst->y_coords[i]);
+    }
+
+    FILE* pipe = popen("gnuplot", "w");
+    if (!pipe) {
+        perror("Error opening pipe to gnuplot");
+        return -1;
+    }
+
+    fprintf(pipe, "set title 'Infeasible Solution Plot (Selected Edges)'\n");
+    fprintf(pipe, "set xlabel 'X Coordinate'\n");
+    fprintf(pipe, "set ylabel 'Y Coordinate'\n");
+    fprintf(pipe, "set grid\n");
+    const double GAP = (max_x - min_x + max_y - min_y) * 0.05;
+    fprintf(pipe, "set xrange [%f:%f]\n", min_x - GAP, max_x + GAP);
+    fprintf(pipe, "set yrange [%f:%f]\n", min_y - GAP, max_y + GAP);
+
+    fprintf(pipe, "plot '-' with points pointtype 7 pointsize 1.2 lc rgb 'blue' title 'Nodes', ");
+    fprintf(pipe, "'-' with lines lc rgb 'red' title 'Selected Edges'\n");
+
+	// verticies
+    for (int i = 0; i < inst->num_nodes; i++) {
+        fprintf(pipe, "%f %f\n", inst->x_coords[i], inst->y_coords[i]);
+    }
+    fprintf(pipe, "e\n"); // End of data for nodes
+
+	// edges
+	int xpos = 0;
+    for (int i = 0; i < inst->num_nodes; i++) {
+        for (int j = i + 1; j < inst->num_nodes; j++) {
+            int k = xpos++;
+            if (xstar[k] > 0.5) {
+                fprintf(pipe, "%f %f\n", inst->x_coords[i], inst->y_coords[i]);
+                fprintf(pipe, "%f %f\n", inst->x_coords[j], inst->y_coords[j]);
+                fprintf(pipe, "\n");
+            }
+        }
+    }
+    fprintf(pipe, "e\n");
+
+    fprintf(pipe, "pause mouse keypress 'Close window or press any key to exit plot...'\n");
+    fflush(pipe);
+    if (pclose(pipe) == -1) {
+         perror("Error closing gnuplot pipe");
+         return -1;
+    }
+
+    return 0; 
 }

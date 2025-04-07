@@ -254,6 +254,9 @@ void benders_method(Instance *inst) {
 			break;
 		} else {
 			// multiple cycles -> unfeasible sol -> add one SEC for each cycle
+			if (inst->verbose >= 90) {
+				plot_infeasible_solution(inst, xstar);
+			}
 			add_sec_constraints(inst, env, lp, &cycles);
 		}
 	}

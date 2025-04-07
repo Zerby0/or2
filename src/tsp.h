@@ -65,6 +65,7 @@ int plot_solution(const Instance* inst, const int* sol);
 int plot_partial_sol(const Instance* inst, const int* sol, int len);
 void plot_cost_iteration(double* cost, int len);
 void save_cost_to_file(const char* filename, int iteration, double cost);
+int plot_infeasible_solution(const Instance* inst, const double* xstar);
 
 int init_instance_data(Instance* inst);
 void free_instance_data(Instance* inst);
