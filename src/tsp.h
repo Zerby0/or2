@@ -21,6 +21,7 @@ typedef struct {
 	bool two_opt;      // Apply two-opt algorithm after the solver
 	bool plot_cost;    // plot the cost of the solution per iteration
 	bool perf_profile; // run the performance profiler
+	char* write_prob;  // write the CPLEX problem to a file
 	// input data
     int num_nodes;     // Number of nodes
     double* x_coords;  // Array for x coordinates
@@ -52,7 +53,7 @@ _LIST_DEF(tm, TabuMove);
 
 double get_time();
 bool is_out_of_time(const Instance* inst);
-
+double get_remaining_time(const Instance* inst);
 void swap(int* a, int pos1, int pos2);
 void invert_subtour(int* tour, int i, int j);
 double compute_tour_cost(const Instance* inst, const int* tour); // O(n)
@@ -82,14 +83,24 @@ void two_opt_from(const Instance* inst, int* tour, double* cost);
 void two_opt(Instance* inst);
 void variable_neigh_search(Instance* inst);
 void tabu_search(Instance* inst);
+void benders_method(Instance* inst);
 
 void run_perf_profile(Instance* inst);
+
+
 // utility macros
 
 #define debug(level, ...) \
     do { \
         if (inst->verbose >= level) fprintf(stderr, __VA_ARGS__); \
     } while (0)
+
+#define fatal_error(...) \
+	do { \
+		fprintf(stderr, __VA_ARGS__); \
+		fflush(NULL); \
+		exit(1); \
+	} while (0)
 
 #define max(a,b)             \
 ({                           \

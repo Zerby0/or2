@@ -79,6 +79,12 @@ double get_cost(const Instance* inst, int i, int j) {
 	return inst->costs_array[i * inst->num_nodes + j];
 }
 
+double get_remaining_time(const Instance* inst) {
+	if (inst->time_limit <= 0) return INFINITY;
+	double elapsed = get_time() - inst->start_time;
+	return max(0,  inst->time_limit - elapsed);
+}
+
 bool is_out_of_time(const Instance* inst) {
 	if (inst->time_limit <= 0) return false;
 	bool r = (get_time() - inst->start_time) > inst->time_limit;

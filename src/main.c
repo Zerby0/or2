@@ -39,6 +39,7 @@ int parse_arguments(int argc, char *argv[], Instance *inst) {
 		_argf("-t", time_limit);
 		_argf("--time-limit", time_limit);
 		_argb("--perf-profile", perf_profile);
+		_args("--write-prob", write_prob);
 		else {
 			fprintf(stderr, "Unknown option: %s\n", argv[i]);
 			return -1;
@@ -54,6 +55,7 @@ int solve_instance(Instance *inst) {
 	else if (strcmp(inst->solver, "em") == 0) extra_milage(inst);
 	else if (strcmp(inst->solver, "vns") == 0) variable_neigh_search(inst);
 	else if (strcmp(inst->solver, "tabu") == 0) tabu_search(inst);
+	else if (strcmp(inst->solver, "benders") == 0) benders_method(inst);
 	else {
 		fprintf(stderr, "Unknown solver: %s\n", inst->solver);
 		return -1;

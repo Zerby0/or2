@@ -4,3 +4,4 @@ tsp
 tsp-*
 build/
 build-*/
+.cache
