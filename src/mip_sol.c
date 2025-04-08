@@ -162,7 +162,7 @@ void add_sec_constraints(const Instance *inst, CPXENVptr env, CPXLPptr lp, const
 			}
 		}
 		assert(comp_size >= 3);
-		assert(nnz >= 3);
+		assert(nnz == comp_size * (comp_size - 1) / 2);
 		double rhs = (double)comp_size - 1.0; // right hand side is |S| - 1
 		sprintf(constrname, "SEC_comp%d_size%d", c, comp_size);
 		char* cname[1] = {constrname};
@@ -232,7 +232,9 @@ void benders_method(Instance *inst) {
 		double elapsed = get_time() - start;
 		debug(30, "CPLEX took %f seconds\n", elapsed);
 
-		int status = CPXgetstat(env, lp);
+		int status;
+		double objval;
+		_c(CPXsolution(env, lp, &status, &objval, xstar, NULL, NULL, NULL));
 		if (status == CPXMIP_TIME_LIM_FEAS || status == CPXMIP_TIME_LIM_INFEAS) {
 			// TODO: use the patch heuristic to get a feasible solution
 			fatal_error("MIP optimization timed out\n");
@@ -241,9 +243,6 @@ void benders_method(Instance *inst) {
 			fatal_error("MIP optimization failed with status %d\n", status);
 		}
 
-		double objval;
-		_c(CPXgetobjval(env, lp, &objval));
-		_c(CPXgetx(env, lp, xstar, 0, num_cols - 1));
 		inst_plot_cost(inst, objval);
 
 		find_cycles(inst, xstar, &cycles);
