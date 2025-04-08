@@ -240,8 +240,6 @@ void patch_heuristic(Instance *inst, Cycles *cycles, int *succ, const double *xs
 			//no crossing pattern
 			succ[best_j] = after_i;
 			succ[best_i] = after_j;
-			//print di tutto l'array succ
-			
 			debug(30, "Using delta1: Patching: %d -> %d, %d -> %d\n", best_j, after_i, best_i, after_j);
 		}
 		else{
