@@ -69,7 +69,7 @@ void variable_neigh_search(Instance* inst) {
 	int tour[inst->num_nodes];
 	memcpy(tour, inst->sol, inst->num_nodes * sizeof(int));
 	double cost = inst->sol_cost;
-	if (inst->plot_cost) list_d_init(&inst->iter_costs);
+	inst_init_plot(inst);
 	int iter = 1, num_3opts = 0;
 	const int MIN_K = 1, MAX_K = 5;
 	int k = MIN_K;
@@ -79,11 +79,11 @@ void variable_neigh_search(Instance* inst) {
 		for (int i = 0; i < k; i++)
 			random_3opt(inst, tour, &cost);
 		num_3opts++, iter++;
-		if (inst->plot_cost) list_d_push(&inst->iter_costs, cost);
+		inst_plot_cost(inst, cost);
 		// local search with 2opt
 		while (two_opt_once(inst, tour, &cost) && !is_out_of_time(inst)) {
 			iter++;
-			if (inst->plot_cost) list_d_push(&inst->iter_costs, cost);
+			inst_plot_cost(inst, cost);
 		}
 		update_sol(inst, tour, cost);
 		// update k
@@ -167,7 +167,7 @@ void tabu_search(Instance* inst) {
 		debug(20, "Initializing solution for TABU with nn\n");
 		nearest_neighbor(inst);
 	}
-	if (inst->plot_cost) list_d_init(&inst->iter_costs);
+	inst_init_plot(inst);
 
     // the main parameter of tabue searh is the tenure -> size of the tabu list
     double tenure_min = max(n / 16.0, 2.0);
@@ -223,7 +223,7 @@ void tabu_search(Instance* inst) {
         }
 		assert(move_history.len == cuckoo_size(&tabu_list));
 
-		if (inst->plot_cost) list_d_push(&inst->iter_costs, current_cost);
+		inst_plot_cost(inst, current_cost);
     }
 
 	debug(40, "TABU: ran for %d iterations, final cost: %f\n", iteration, current_cost);

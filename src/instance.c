@@ -91,3 +91,20 @@ bool is_out_of_time(const Instance* inst) {
 	if (r) debug(50, "Out of time!\n");
 	return r;
 }
+
+
+void inst_init_plot(Instance* inst) {
+	if (!inst->plot_cost) return;
+	if (inst->iter_costs.len > 0) {
+		debug(10, "Warning: erasing %d previous cost data\n", inst->iter_costs.len);
+	}
+	if (inst->iter_costs.buf) {
+		free(inst->iter_costs.buf);
+	}
+	list_d_init(&inst->iter_costs);
+}
+
+void inst_plot_cost(Instance* inst, double cost) {
+	if (!inst->plot_cost) return;
+	list_d_push(&inst->iter_costs, cost);
+}

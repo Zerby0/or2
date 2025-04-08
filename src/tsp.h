@@ -72,6 +72,8 @@ void free_instance_data(Instance* inst);
 int solve_instance(Instance* inst);
 bool update_sol(Instance* inst, int* tour, double cost);
 double get_cost(const Instance* inst, int i, int j);
+void inst_init_plot(Instance* inst);
+void inst_plot_cost(Instance* inst, double cost);
 
 void basic_sol(Instance* inst);
 void nearest_neighbor(Instance* inst);
