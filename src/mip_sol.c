@@ -8,7 +8,7 @@
 
 typedef struct {
 	int* succ;   // successor in the cycle
-	int* comp;   // component number of the element
+	int* comp;   // component number of the element 
 	int ncomp;  // number of connected components
 } Cycles;
 
@@ -183,6 +183,100 @@ void reconstruct_tour(Instance *inst, const Cycles* cycles, double objval) {
 	update_sol(inst, tour, objval);
 }
 
+//delta1 = no crossing, delta2 = crossing. True if no crossing is better
+bool choose_with_delta(Instance *inst, int i, int j, int *succ) {
+	double delta1 = (get_cost(inst, i, j) + get_cost(inst, succ[i], succ[j])) 
+		- (get_cost(inst, i, succ[i]) + get_cost(inst, j, succ[j]));
+		debug(30, "delta1: %f\n", delta1);
+	double delta2 = (get_cost(inst, i, succ[j]) + get_cost(inst, j, succ[i]))
+		- (get_cost(inst, succ[i], i) + get_cost(inst, j, succ[j]));
+		debug(30, "delta2: %f\n", delta2);
+	return delta1 < delta2;
+}
+
+void patch_heuristic(Instance *inst, Cycles *cycles, int *succ, const double *xstar) {
+	printf("Patching...\n");
+	find_cycles(inst, xstar, cycles);
+	if (cycles->ncomp <= 1) return;
+    int n = inst->num_nodes;
+    int ncomp = cycles->ncomp;
+	debug(30, "Found %d components\n", ncomp);
+
+	// find the best pair of components to merge and merge them
+    while (true) {
+		if (ncomp <= 1) break;
+        int best_i = -1, best_j = -1;
+        double best_cost = INF_COST;
+
+        for (int i = 0; i < n; ++i) {
+            for (int j = 0; j < n; ++j) {
+                if (cycles->comp[i] != cycles->comp[j]) {
+                    double cost = get_cost(inst, i, j);
+                    if (cost < best_cost) {
+                        best_cost = cost;
+                        best_i = i;
+                        best_j = j;
+                    }
+                }
+            }
+        }
+        
+        if (best_i < 0 || best_j < 0) {
+			fatal_error("No valid pair best_i %d, best_j %d\n", best_i, best_j); 
+		}
+		debug(30, "Best pair: %d, %d\nWhere j belong to %d and i belong to %d\n", best_i, best_j, cycles->comp[best_j], cycles->comp[best_i]);
+
+		for (int k = 0; k < n; ++k) {
+			debug(30, "succ[%d] = %d\n", k, succ[k]);
+		}
+		for(int k = 0; k < n; ++k) {
+			debug(30, "comp[%d] = %d\n", k, cycles->comp[k]);
+		}
+
+		int after_i = succ[best_i];
+		int after_j = succ[best_j];
+		
+		if(choose_with_delta(inst, best_i, best_j, succ)){
+			//no crossing pattern
+			succ[best_j] = after_i;
+			succ[best_i] = after_j;
+			//print di tutto l'array succ
+			
+			debug(30, "Using delta1: Patching: %d -> %d, %d -> %d\n", best_j, after_i, best_i, after_j);
+		}
+		else{
+			//crossing pattern
+			succ[best_i] = after_j;
+			succ[best_j] = after_i;
+			debug(30, "Using delta2: Patching: %d -> %d, %d -> %d\n", best_i, after_j, best_j, after_i);
+		}
+		
+		int old_comp = cycles->comp[best_j];
+		for (int i = 0; i < n; ++i) {
+			if (cycles->comp[i] == old_comp) {
+				cycles->comp[i] = cycles->comp[best_i];
+			}
+		}
+
+		for (int k = 0; k < n; ++k) {
+			debug(30, "succ[%d] = %d\n", k, succ[k]);
+		}
+		for(int k = 0; k < n; ++k) {
+			debug(30, "comp[%d] = %d\n", k, cycles->comp[k]);
+		}
+		
+		ncomp--;
+	}
+	
+	// reconstruct the tour
+	double objval = 0;
+	for (int i = 0; i < n; ++i) {
+		objval += get_cost(inst, i, succ[i]);
+	}
+	debug(30, "Reconstructed tour cost: %f\n", objval);
+	reconstruct_tour(inst, cycles, objval);
+}
+
 void benders_method(Instance *inst) {
 	int error = 0;
 	CPXENVptr env = NULL;
@@ -236,8 +330,9 @@ void benders_method(Instance *inst) {
 		double objval;
 		_c(CPXsolution(env, lp, &status, &objval, xstar, NULL, NULL, NULL));
 		if (status == CPXMIP_TIME_LIM_FEAS || status == CPXMIP_TIME_LIM_INFEAS) {
-			// TODO: use the patch heuristic to get a feasible solution
-			fatal_error("MIP optimization timed out\n");
+			patch_heuristic(inst, &cycles, succ, xstar);					//here better :)
+			plot_Instance(inst);
+			fatal_error("MIP optimization timed out but we have a feasible sol thanks to patch heuristic\n");
 		}
 		if (!(status == CPXMIP_OPTIMAL || status == CPXMIP_OPTIMAL_TOL)) {
 			fatal_error("MIP optimization failed with status %d\n", status);
@@ -258,6 +353,7 @@ void benders_method(Instance *inst) {
 				plot_infeasible_solution(inst, xstar);
 			}
 			add_sec_constraints(inst, env, lp, &cycles);
+			//patch_heuristic(inst, &cycles, succ, xstar); if here do not work :)
 		}
 	}
 
