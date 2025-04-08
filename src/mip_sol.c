@@ -188,6 +188,7 @@ void benders_method(Instance *inst) {
 	CPXENVptr env = NULL;
 	CPXLPptr lp = NULL;
 	int n = inst->num_nodes;
+	inst_init_plot(inst);
 
 	debug(40, "Initializing CPLEX environment...\n");
 	env = CPXopenCPLEX(&error);
@@ -200,7 +201,6 @@ void benders_method(Instance *inst) {
 	CPXsetintparam(env, CPX_PARAM_THREADS, 1); // use a single thread for now
 	CPXsetintparam(env, CPX_PARAM_SCRIND, (inst->verbose >= 50) ? CPX_ON : CPX_OFF);
 	CPXsetintparam(env, CPX_PARAM_MIPDISPLAY /* 0 to 5 */, max(0, (inst->verbose - 50) / 10));
-
 
 	lp = CPXcreateprob(env, &error, "TSP_Benders");
 	if (lp == NULL) {
@@ -237,13 +237,14 @@ void benders_method(Instance *inst) {
 			// TODO: use the patch heuristic to get a feasible solution
 			fatal_error("MIP optimization timed out\n");
 		}
-		if (!(status == CPXMIP_OPTIMAL || status == CPXMIP_OPTIMAL_TOL || status == CPXMIP_FEASIBLE)) {
+		if (!(status == CPXMIP_OPTIMAL || status == CPXMIP_OPTIMAL_TOL)) {
 			fatal_error("MIP optimization failed with status %d\n", status);
 		}
 
 		double objval;
 		_c(CPXgetobjval(env, lp, &objval));
 		_c(CPXgetx(env, lp, xstar, 0, num_cols - 1));
+		inst_plot_cost(inst, objval);
 
 		find_cycles(inst, xstar, &cycles);
 		debug(30, "Found %d component(s), lowerbound = %f\n", cycles.ncomp, objval);

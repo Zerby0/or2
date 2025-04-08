@@ -100,8 +100,10 @@ int main(int argc, char *argv[]) {
 	}
 	printf("%f\n", inst->sol_cost);
 
-	if (inst->plot_cost && inst->iter_costs.len > 0)
+	if (inst->plot_cost && inst->iter_costs.len > 0) {
 		plot_cost_iteration(inst->iter_costs.buf, inst->iter_costs.len);
+		free(inst->iter_costs.buf);
+	}
     plot_Instance(inst);
     debug(20, "Data plotted\n");
 	
