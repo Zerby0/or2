@@ -22,9 +22,9 @@ int plot_partial_sol(const Instance* inst, const int* sol, int len) {
 	fprintf(pipe, "set xlabel 'X'\n");
 	fprintf(pipe, "set ylabel 'Y'\n");
 	fprintf(pipe, "set grid\n");
-    const double GAP = 3;
-	fprintf(pipe, "set xrange [%f:%f+%f]\n", min_x, max_x, GAP);
-	fprintf(pipe, "set yrange [%f:%f+%f]\n", min_y, max_y, GAP);
+    double gap = (max_x - min_x + max_y - min_y) * 0.02;
+    fprintf(pipe, "set xrange [%f:%f]\n", min_x - gap, max_x + gap);
+    fprintf(pipe, "set yrange [%f:%f]\n", min_y - gap, max_y + gap);
 
 	// plot points with coordinates arrays
 	fprintf(pipe, "plot '-' with points pointtype 7 pointsize 1.5 lc rgb 'blue' title 'Nodes', '-' with lines lc rgb 'red' title 'Connections'\n");
@@ -55,7 +55,7 @@ int plot_solution(const Instance* inst, const int* sol) {
 	return plot_partial_sol(inst, sol, inst->num_nodes);
 }
 
-int plot_Instance(Instance* inst) {
+int plot_instance(Instance* inst) {
 	return plot_partial_sol(inst, inst->sol, inst->num_nodes);
 }
 
@@ -112,9 +112,9 @@ int plot_infeasible_solution(const Instance* inst, const double* xstar) {
     fprintf(pipe, "set xlabel 'X Coordinate'\n");
     fprintf(pipe, "set ylabel 'Y Coordinate'\n");
     fprintf(pipe, "set grid\n");
-    const double GAP = (max_x - min_x + max_y - min_y) * 0.05;
-    fprintf(pipe, "set xrange [%f:%f]\n", min_x - GAP, max_x + GAP);
-    fprintf(pipe, "set yrange [%f:%f]\n", min_y - GAP, max_y + GAP);
+    double gap = (max_x - min_x + max_y - min_y) * 0.02;
+    fprintf(pipe, "set xrange [%f:%f]\n", min_x - gap, max_x + gap);
+    fprintf(pipe, "set yrange [%f:%f]\n", min_y - gap, max_y + gap);
 
     fprintf(pipe, "plot '-' with points pointtype 7 pointsize 1.2 lc rgb 'blue' title 'Nodes', ");
     fprintf(pipe, "'-' with lines lc rgb 'red' title 'Selected Edges'\n");

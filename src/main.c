@@ -104,7 +104,7 @@ int main(int argc, char *argv[]) {
 		plot_cost_iteration(inst->iter_costs.buf, inst->iter_costs.len);
 		free(inst->iter_costs.buf);
 	}
-    plot_Instance(inst);
+    plot_instance(inst);
     debug(20, "Data plotted\n");
 	
 	free_instance_data(inst);

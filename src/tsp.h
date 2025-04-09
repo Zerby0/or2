@@ -60,7 +60,7 @@ double compute_tour_cost(const Instance* inst, const int* tour); // O(n)
 
 int parse_tsp_file(Instance *inst, const char* filename);
 void random_inst_data(Instance* inst);
-int plot_Instance(Instance* inst);
+int plot_instance(Instance* inst);
 int plot_solution(const Instance* inst, const int* sol);
 int plot_partial_sol(const Instance* inst, const int* sol, int len);
 void plot_cost_iteration(double* cost, int len);

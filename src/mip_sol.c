@@ -226,7 +226,7 @@ bool choose_with_delta(Instance *inst, int i, int j, int *succ) {
 }
 
 void patch_heuristic(Instance *inst, Cycles *cycles, int *succ, const double *xstar) {
-	printf("Patching...\n");
+	debug(30, "Patching...\n");
 	find_cycles(inst, xstar, cycles);
 	if (cycles->ncomp <= 1) return;
     int n = inst->num_nodes;
@@ -244,19 +244,11 @@ void patch_heuristic(Instance *inst, Cycles *cycles, int *succ, const double *xs
                 if (cycles->comp[i] != cycles->comp[j]) {
                     double delta1 = get_delta1(inst, i, j, succ);
 					double delta2 = get_delta2(inst, i, j, succ);
-                    if (delta1 < delta2) {
-						if (delta1 < best_cost) {
-							best_cost = delta1;
-							best_i = i;
-							best_j = j;
-						}
-                    }
-					else {
-						if (delta2 < best_cost) {
-							best_cost = delta2;
-							best_i = i;
-							best_j = j;
-						}
+					double delta = min(delta1, delta2);
+					if (delta < best_cost) {
+						best_cost = delta;
+						best_i = i;
+						best_j = j;
 					}
                 }
             }
@@ -314,6 +306,7 @@ void patch_heuristic(Instance *inst, Cycles *cycles, int *succ, const double *xs
 	for (int i = 0; i < n; ++i) {
 		objval += get_cost(inst, i, succ[i]);
 	}
+	compute_tour_cost(inst, succ);
 	debug(30, "Reconstructed tour cost: %f\n", objval);
 	reconstruct_tour(inst, cycles, objval);
 }
@@ -372,8 +365,8 @@ void benders_method(Instance *inst) {
 		_c(CPXsolution(env, lp, &status, &objval, xstar, NULL, NULL, NULL));
 		if (status == CPXMIP_TIME_LIM_FEAS || status == CPXMIP_TIME_LIM_INFEAS) {
 			patch_heuristic(inst, &cycles, succ, xstar);
-			printf("MIP optimization timed out but we have a feasible sol thanks to patch heuristic\n");
-			return;
+			debug(10, "MIP optimization timed out but we have a feasible sol thanks to patch heuristic\n");
+			break;
 		}
 		if (!(status == CPXMIP_OPTIMAL || status == CPXMIP_OPTIMAL_TOL)) {
 			fatal_error("MIP optimization failed with status %d\n", status);
@@ -395,6 +388,9 @@ void benders_method(Instance *inst) {
 			}
 			add_sec_constraints(inst, env, lp, &cycles);
 			patch_heuristic(inst, &cycles, succ, xstar);
+			if (inst->verbose >= 90) {
+				plot_instance(inst);
+			}
 		}
 	}
 
