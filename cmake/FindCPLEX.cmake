@@ -82,6 +82,7 @@ FIND_PATH(CPLEX_CONCERT_INCLUDE_DIR
         ENV C_PLUS_INCLUDE_PATH
         ENV INCLUDE_PATH
   )
+  message(STATUS "CPLEX include: ${CPLEX_CONCERT_INCLUDE_DIR}")
 
 FIND_LIBRARY(CPLEX_LIBRARY
   NAMES cplex${CPLEX_WIN_VERSION} cplex
@@ -89,7 +90,8 @@ FIND_LIBRARY(CPLEX_LIBRARY
         ${CPLEX_ROOT_DIR}/cplex/lib/x86-64_debian4.0_4.1/static_pic #unix
         ${CPLEX_ROOT_DIR}/cplex/lib/x86-64_sles10_4.1/static_pic #unix 
         ${CPLEX_ROOT_DIR}/cplex/lib/x86-64_linux/static_pic #unix
-        ${CPLEX_ROOT_DIR}/cplex/lib/x86-64_osx/static_pic #osx 
+        ${CPLEX_ROOT_DIR}/cplex/lib/x86-64_osx/static_pic #osx
+        ${CPLEX_ROOT_DIR}/cplex/lib/arm64_osx/static_pic #osx 
   PATHS ENV LIBRARY_PATH #unix
         ENV LD_LIBRARY_PATH #unix
   )
@@ -102,6 +104,7 @@ FIND_LIBRARY(CPLEX_ILOCPLEX_LIBRARY
         ${CPLEX_ROOT_DIR}/cplex/lib/x86-64_sles10_4.1/static_pic #unix 
         ${CPLEX_ROOT_DIR}/cplex/lib/x86-64_linux/static_pic #unix
         ${CPLEX_ROOT_DIR}/cplex/lib/x86-64_osx/static_pic #osx 
+        ${CPLEX_ROOT_DIR}/cplex/lib/arm64_osx/static_pic #osx 
   PATHS ENV LIBRARY_PATH
         ENV LD_LIBRARY_PATH
   )
@@ -114,6 +117,7 @@ FIND_LIBRARY(CPLEX_CONCERT_LIBRARY
         ${CPLEX_ROOT_DIR}/concert/lib/x86-64_sles10_4.1/static_pic #unix 
         ${CPLEX_ROOT_DIR}/concert/lib/x86-64_linux/static_pic #unix
         ${CPLEX_ROOT_DIR}/concert/lib/x86-64_osx/static_pic #osx 
+        ${CPLEX_ROOT_DIR}/concert/lib/arm64_osx/static_pic #osx 
   PATHS ENV LIBRARY_PATH
         ENV LD_LIBRARY_PATH
   )
@@ -131,6 +135,7 @@ else()
                 ${CPLEX_ROOT_DIR}/cplex/bin/x86-64_debian4.0_4.1 #unix 
                 ${CPLEX_ROOT_DIR}/cplex/bin/x86-64_linux #unix
                 ${CPLEX_ROOT_DIR}/cplex/bin/x86-64_osx #osx 
+                ${CPLEX_ROOT_DIR}/cplex/bin/arm64_osx #osx 
 	  ENV LIBRARY_PATH
           ENV LD_LIBRARY_PATH
 	  )

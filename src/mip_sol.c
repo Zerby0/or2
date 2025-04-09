@@ -183,15 +183,46 @@ void reconstruct_tour(Instance *inst, const Cycles* cycles, double objval) {
 	update_sol(inst, tour, objval);
 }
 
-//delta1 = no crossing, delta2 = crossing. True if no crossing is better
-bool choose_with_delta(Instance *inst, int i, int j, int *succ) {
+void invert_cycle(Instance* inst, int *succ, int start) {
+	int n = inst->num_nodes;
+    int prev = start;
+    int current = succ[start];
+    int next;
+
+    if (current == start) return;
+    int first = start;
+    succ[first] = first;
+	while (current != start) {
+        next = succ[current];
+        succ[current] = prev;
+        prev = current;
+        current = next;
+    }
+	succ[first] = prev;
+
+	debug(50, "inverted cycle:\n");
+	for(int i = 0; i < n; ++i) {
+		debug(50, "succ[%d] = %d\n", i, succ[i]);
+	}
+}
+
+double get_delta1(Instance *inst, int i, int j, int *succ) {
 	double delta1 = (get_cost(inst, i, j) + get_cost(inst, succ[i], succ[j])) 
 		- (get_cost(inst, i, succ[i]) + get_cost(inst, j, succ[j]));
-		debug(30, "delta1: %f\n", delta1);
+	debug(80, "delta1: %f\n", delta1);
+	return delta1;
+}
+
+double get_delta2(Instance *inst, int i, int j, int *succ) {
 	double delta2 = (get_cost(inst, i, succ[j]) + get_cost(inst, j, succ[i]))
 		- (get_cost(inst, succ[i], i) + get_cost(inst, j, succ[j]));
-		debug(30, "delta2: %f\n", delta2);
-	return delta1 < delta2;
+	debug(80, "delta2: %f\n", delta2);
+	return delta2;
+}
+
+//delta1 = i->j, delta2 = i->succ[j]
+bool choose_with_delta(Instance *inst, int i, int j, int *succ) {
+	return get_delta1(inst, i, j, succ) < get_delta2(inst, i , j, succ);
 }
 
 void patch_heuristic(Instance *inst, Cycles *cycles, int *succ, const double *xstar) {
@@ -203,7 +234,7 @@ void patch_heuristic(Instance *inst, Cycles *cycles, int *succ, const double *xs
 	debug(30, "Found %d components\n", ncomp);
 
 	// find the best pair of components to merge and merge them
-    while (true) {
+    while (1) {
 		if (ncomp <= 1) break;
         int best_i = -1, best_j = -1;
         double best_cost = INF_COST;
@@ -211,12 +242,22 @@ void patch_heuristic(Instance *inst, Cycles *cycles, int *succ, const double *xs
         for (int i = 0; i < n; ++i) {
             for (int j = 0; j < n; ++j) {
                 if (cycles->comp[i] != cycles->comp[j]) {
-                    double cost = get_cost(inst, i, j);
-                    if (cost < best_cost) {
-                        best_cost = cost;
-                        best_i = i;
-                        best_j = j;
+                    double delta1 = get_delta1(inst, i, j, succ);
+					double delta2 = get_delta2(inst, i, j, succ);
+                    if (delta1 < delta2) {
+						if (delta1 < best_cost) {
+							best_cost = delta1;
+							best_i = i;
+							best_j = j;
+						}
                     }
+					else {
+						if (delta2 < best_cost) {
+							best_cost = delta2;
+							best_i = i;
+							best_j = j;
+						}
+					}
                 }
             }
         }
@@ -226,27 +267,29 @@ void patch_heuristic(Instance *inst, Cycles *cycles, int *succ, const double *xs
 		}
 		debug(30, "Best pair: %d, %d\nWhere j belong to %d and i belong to %d\n", best_i, best_j, cycles->comp[best_j], cycles->comp[best_i]);
 
-		for (int k = 0; k < n; ++k) {
-			debug(30, "succ[%d] = %d\n", k, succ[k]);
+		if (inst->verbose >= 30){
+			for (int k = 0; k < n; ++k) {
+				debug(30, "succ[%d] = %d\n", k, succ[k]);
+			}
+			for(int k = 0; k < n; ++k) {
+				debug(30, "comp[%d] = %d\n", k, cycles->comp[k]);
+			}
 		}
-		for(int k = 0; k < n; ++k) {
-			debug(30, "comp[%d] = %d\n", k, cycles->comp[k]);
-		}
+		
 
 		int after_i = succ[best_i];
 		int after_j = succ[best_j];
 		
 		if(choose_with_delta(inst, best_i, best_j, succ)){
-			//no crossing pattern
-			succ[best_j] = after_i;
-			succ[best_i] = after_j;
-			debug(30, "Using delta1: Patching: %d -> %d, %d -> %d\n", best_j, after_i, best_i, after_j);
+			debug(30, "Patching: %d -> %d, %d -> %d with invert_cycle\n", best_j, after_i, best_i, after_j);
+			invert_cycle(inst, succ, best_j);
+			succ[best_i] = best_j;
+			succ[after_j] = after_i;
 		}
 		else{
-			//crossing pattern
+			debug(30, "Patching: %d -> %d, %d -> %d\n", best_i, after_j, best_j, after_i);
 			succ[best_i] = after_j;
 			succ[best_j] = after_i;
-			debug(30, "Using delta2: Patching: %d -> %d, %d -> %d\n", best_i, after_j, best_j, after_i);
 		}
 		
 		int old_comp = cycles->comp[best_j];
@@ -262,7 +305,7 @@ void patch_heuristic(Instance *inst, Cycles *cycles, int *succ, const double *xs
 		for(int k = 0; k < n; ++k) {
 			debug(30, "comp[%d] = %d\n", k, cycles->comp[k]);
 		}
-		
+
 		ncomp--;
 	}
 	
@@ -328,9 +371,9 @@ void benders_method(Instance *inst) {
 		double objval;
 		_c(CPXsolution(env, lp, &status, &objval, xstar, NULL, NULL, NULL));
 		if (status == CPXMIP_TIME_LIM_FEAS || status == CPXMIP_TIME_LIM_INFEAS) {
-			patch_heuristic(inst, &cycles, succ, xstar);					//here better :)
-			plot_Instance(inst);
-			fatal_error("MIP optimization timed out but we have a feasible sol thanks to patch heuristic\n");
+			patch_heuristic(inst, &cycles, succ, xstar);
+			printf("MIP optimization timed out but we have a feasible sol thanks to patch heuristic\n");
+			return;
 		}
 		if (!(status == CPXMIP_OPTIMAL || status == CPXMIP_OPTIMAL_TOL)) {
 			fatal_error("MIP optimization failed with status %d\n", status);
@@ -351,7 +394,7 @@ void benders_method(Instance *inst) {
 				plot_infeasible_solution(inst, xstar);
 			}
 			add_sec_constraints(inst, env, lp, &cycles);
-			//patch_heuristic(inst, &cycles, succ, xstar); if here do not work :)
+			patch_heuristic(inst, &cycles, succ, xstar);
 		}
 	}
 
