@@ -180,6 +180,9 @@ void reconstruct_tour(Instance *inst, const Cycles* cycles, double objval) {
 		current = cycles->succ[current];
 	}
 	assert(current == 0);
+	if (inst->verbose >= 90) {
+		plot_solution(inst, tour);
+	}
 	update_sol(inst, tour, objval);
 }
 
@@ -199,39 +202,30 @@ void invert_cycle(Instance* inst, int *succ, int start) {
         current = next;
     }
 	succ[first] = prev;
-
-	debug(50, "inverted cycle:\n");
-	for(int i = 0; i < n; ++i) {
-		debug(50, "succ[%d] = %d\n", i, succ[i]);
-	}
 }
 
-double get_delta1(Instance *inst, int i, int j, int *succ) {
+double get_delta1(const Instance *inst, int i, int j, int *succ) {
 	double delta1 = (get_cost(inst, i, j) + get_cost(inst, succ[i], succ[j])) 
 		- (get_cost(inst, i, succ[i]) + get_cost(inst, j, succ[j]));
-	debug(80, "delta1: %f\n", delta1);
 	return delta1;
 }
 
-double get_delta2(Instance *inst, int i, int j, int *succ) {
+double get_delta2(const Instance *inst, int i, int j, int *succ) {
 	double delta2 = (get_cost(inst, i, succ[j]) + get_cost(inst, j, succ[i]))
 		- (get_cost(inst, succ[i], i) + get_cost(inst, j, succ[j]));
-	debug(80, "delta2: %f\n", delta2);
 	return delta2;
 }
 
-//delta1 = i->j, delta2 = i->succ[j]
-bool choose_with_delta(Instance *inst, int i, int j, int *succ) {
+bool choose_with_delta(const Instance *inst, int i, int j, int *succ) {
 	return get_delta1(inst, i, j, succ) < get_delta2(inst, i , j, succ);
 }
 
-void patch_heuristic(Instance *inst, Cycles *cycles, int *succ, const double *xstar) {
-	debug(30, "Patching...\n");
-	find_cycles(inst, xstar, cycles);
-	if (cycles->ncomp <= 1) return;
+double patch_heuristic(Instance *inst, Cycles *cycles, const double *xstar) {
+	debug(50, "Patching...\n");
+	if (cycles->ncomp <= 1) return -1;
     int n = inst->num_nodes;
     int ncomp = cycles->ncomp;
-	debug(30, "Found %d components\n", ncomp);
+	int* succ = cycles->succ;
 
 	// find the best pair of components to merge and merge them
     while (1) {
@@ -257,29 +251,19 @@ void patch_heuristic(Instance *inst, Cycles *cycles, int *succ, const double *xs
         if (best_i < 0 || best_j < 0) {
 			fatal_error("No valid pair best_i %d, best_j %d\n", best_i, best_j); 
 		}
-		debug(30, "Best pair: %d, %d\nWhere j belong to %d and i belong to %d\n", best_i, best_j, cycles->comp[best_j], cycles->comp[best_i]);
-
-		if (inst->verbose >= 30){
-			for (int k = 0; k < n; ++k) {
-				debug(30, "succ[%d] = %d\n", k, succ[k]);
-			}
-			for(int k = 0; k < n; ++k) {
-				debug(30, "comp[%d] = %d\n", k, cycles->comp[k]);
-			}
-		}
-		
+		debug(40, "Best pair: %d, %d; where j belongs to %d and i belongs to %d\n", best_i, best_j, cycles->comp[best_j], cycles->comp[best_i]);
 
 		int after_i = succ[best_i];
 		int after_j = succ[best_j];
 		
 		if(choose_with_delta(inst, best_i, best_j, succ)){
-			debug(30, "Patching: %d -> %d, %d -> %d with invert_cycle\n", best_j, after_i, best_i, after_j);
+			debug(40, "Patching: %d -> %d, %d -> %d with invert_cycle\n", best_j, after_i, best_i, after_j);
 			invert_cycle(inst, succ, best_j);
 			succ[best_i] = best_j;
 			succ[after_j] = after_i;
 		}
 		else{
-			debug(30, "Patching: %d -> %d, %d -> %d\n", best_i, after_j, best_j, after_i);
+			debug(40, "Patching: %d -> %d, %d -> %d\n", best_i, after_j, best_j, after_i);
 			succ[best_i] = after_j;
 			succ[best_j] = after_i;
 		}
@@ -291,13 +275,6 @@ void patch_heuristic(Instance *inst, Cycles *cycles, int *succ, const double *xs
 			}
 		}
 
-		for (int k = 0; k < n; ++k) {
-			debug(30, "succ[%d] = %d\n", k, succ[k]);
-		}
-		for(int k = 0; k < n; ++k) {
-			debug(30, "comp[%d] = %d\n", k, cycles->comp[k]);
-		}
-
 		ncomp--;
 	}
 	
@@ -307,8 +284,9 @@ void patch_heuristic(Instance *inst, Cycles *cycles, int *succ, const double *xs
 		objval += get_cost(inst, i, succ[i]);
 	}
 	compute_tour_cost(inst, succ);
-	debug(30, "Reconstructed tour cost: %f\n", objval);
+	debug(30, "Patched tour cost: %f\n", objval);
 	reconstruct_tour(inst, cycles, objval);
+	return objval;
 }
 
 void benders_method(Instance *inst) {
@@ -361,25 +339,26 @@ void benders_method(Instance *inst) {
 		debug(30, "CPLEX took %f seconds\n", elapsed);
 
 		int status;
-		double objval;
-		_c(CPXsolution(env, lp, &status, &objval, xstar, NULL, NULL, NULL));
+		double lowerbound; // when ncomp>1 this is a lowerbound to the cost
+		_c(CPXsolution(env, lp, &status, &lowerbound, xstar, NULL, NULL, NULL));
 		if (status == CPXMIP_TIME_LIM_FEAS || status == CPXMIP_TIME_LIM_INFEAS) {
-			patch_heuristic(inst, &cycles, succ, xstar);
-			debug(10, "MIP optimization timed out but we have a feasible sol thanks to patch heuristic\n");
+			debug(10, "MIP optimization timed out, building a feasible sol with patch heuristic\n");
+			find_cycles(inst, xstar, &cycles);
+			double cost = patch_heuristic(inst, &cycles, xstar);
+			inst_plot_cost(inst, cost); // we don't have a lowerbound since xstar is not optimal
 			break;
 		}
 		if (!(status == CPXMIP_OPTIMAL || status == CPXMIP_OPTIMAL_TOL)) {
 			fatal_error("MIP optimization failed with status %d\n", status);
 		}
 
-		inst_plot_cost(inst, objval);
-
 		find_cycles(inst, xstar, &cycles);
-		debug(30, "Found %d component(s), lowerbound = %f\n", cycles.ncomp, objval);
+		debug(30, "Found %d component(s), lowerbound = %f\n", cycles.ncomp, lowerbound);
 
 		if (cycles.ncomp == 1) {
 			// only one cycle -> valid tour
-			reconstruct_tour(inst, &cycles, objval);
+			reconstruct_tour(inst, &cycles, lowerbound);
+			inst_plot_iter_data(inst, lowerbound, lowerbound);
 			break;
 		} else {
 			// multiple cycles -> unfeasible sol -> add one SEC for each cycle
@@ -387,10 +366,8 @@ void benders_method(Instance *inst) {
 				plot_infeasible_solution(inst, xstar);
 			}
 			add_sec_constraints(inst, env, lp, &cycles);
-			patch_heuristic(inst, &cycles, succ, xstar);
-			if (inst->verbose >= 90) {
-				plot_instance(inst);
-			}
+			double cost = patch_heuristic(inst, &cycles, xstar); // after SEC since this modifies `cycles`
+			inst_plot_iter_data(inst, lowerbound, cost);
 		}
 	}
 

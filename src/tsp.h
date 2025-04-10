@@ -11,6 +11,12 @@ static const double EPS_COST = 1e-5;
 static const double INF_COST = 1e38;
 
 typedef struct {
+	double bound; // bound at the current iteration
+	double cost;  // cost of the solution at the current iteration
+} IterData;
+_LIST_DEF(id, IterData);
+
+typedef struct {
 	// parameters
 	int verbose;       // Verbosity level 1-100
     char* file;        // File name
@@ -32,7 +38,7 @@ typedef struct {
 	double sol_cost;   // cost of the best solution
 	double start_time; // time when the program started, to check OOT
 	// debugging data
-	List_d iter_costs; // list of costs per iteration
+	List_id iter_data; // list of costs/bounds per iteration
 
     //using a single data structure to store the coordinates of the pts can
     //be more efficient so the ram can do only one operation (the data separated are very far on the ram)
@@ -63,7 +69,7 @@ void random_inst_data(Instance* inst);
 int plot_instance(Instance* inst);
 int plot_solution(const Instance* inst, const int* sol);
 int plot_partial_sol(const Instance* inst, const int* sol, int len);
-void plot_cost_iteration(double* cost, int len);
+void plot_cost_iteration(const IterData* data, int len);
 void save_cost_to_file(const char* filename, int iteration, double cost);
 int plot_infeasible_solution(const Instance* inst, const double* xstar);
 
@@ -74,6 +80,7 @@ bool update_sol(Instance* inst, int* tour, double cost);
 double get_cost(const Instance* inst, int i, int j);
 void inst_init_plot(Instance* inst);
 void inst_plot_cost(Instance* inst, double cost);
+void inst_plot_iter_data(Instance* inst, double bound, double cost);
 
 void basic_sol(Instance* inst);
 void nearest_neighbor(Instance* inst);

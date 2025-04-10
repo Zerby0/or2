@@ -1,6 +1,7 @@
 #include "tsp.h"
 
 #include <assert.h>
+#include <math.h>
 #include <stdio.h>
 
 int plot_partial_sol(const Instance* inst, const int* sol, int len) {
@@ -59,7 +60,7 @@ int plot_instance(Instance* inst) {
 	return plot_partial_sol(inst, inst->sol, inst->num_nodes);
 }
 
-void plot_cost_iteration(double* costs, int num_costs) {
+void plot_cost_iteration(const IterData* id, int num_costs) {
 	if (num_costs == 0) {
 		return;
 	}
@@ -73,17 +74,26 @@ void plot_cost_iteration(double* costs, int num_costs) {
     fprintf(pipe, "set xlabel 'Iteration'\n");
     fprintf(pipe, "set ylabel 'Cost'\n");
 
-    fprintf(pipe, "plot '-' with lines linecolor rgb 'blue' title 'Cost', '-' with lines linecolor rgb 'red' title 'Best Cost'\n");
+	bool has_bound = !isnan(id[0].bound);
+    fprintf(pipe, "plot '-' with lines linecolor rgb 'blue' title 'Cost', '-' with lines linecolor rgb 'red' title 'Best Cost'");
+	if (has_bound) fprintf(pipe, ", '-' with lines linecolor rgb 'black' title 'Bound'");
+    fprintf(pipe, "\n");
     for (int i = 0; i < num_costs; i++) {
-        fprintf(pipe, "%d %f\n", i, costs[i]);
+        fprintf(pipe, "%d %f\n", i, id[i].cost);
     }
     fprintf(pipe, "e\n");
-	double best = costs[0];
+	double best = id[0].cost;
     for (int i = 0; i < num_costs; i++) {
-		best = min(best, costs[i]);
+		best = min(best, id[i].cost);
         fprintf(pipe, "%d %f\n", i, best);
     }
     fprintf(pipe, "e\n");
+	if (has_bound) {
+		for (int i = 0; i < num_costs; i++) {
+			fprintf(pipe, "%d %f\n", i, id[i].bound);
+		}
+		fprintf(pipe, "e\n");
+	}
 
 	fprintf(pipe, "pause mouse keypress\n");
 	fflush(pipe);

@@ -95,16 +95,21 @@ bool is_out_of_time(const Instance* inst) {
 
 void inst_init_plot(Instance* inst) {
 	if (!inst->plot_cost) return;
-	if (inst->iter_costs.len > 0) {
-		debug(10, "Warning: erasing %d previous cost data\n", inst->iter_costs.len);
+	if (inst->iter_data.len > 0) {
+		debug(10, "Warning: erasing %d previous cost data\n", inst->iter_data.len);
 	}
-	if (inst->iter_costs.buf) {
-		free(inst->iter_costs.buf);
+	if (inst->iter_data.buf) {
+		free(inst->iter_data.buf);
 	}
-	list_d_init(&inst->iter_costs);
+	list_id_init(&inst->iter_data);
+}
+
+void inst_plot_iter_data(Instance* inst, double bound, double cost) {
+	if (!inst->plot_cost) return;
+	IterData data = { bound, cost };
+	list_id_push(&inst->iter_data, data);
 }
 
 void inst_plot_cost(Instance* inst, double cost) {
-	if (!inst->plot_cost) return;
-	list_d_push(&inst->iter_costs, cost);
+	inst_plot_iter_data(inst, NAN, cost);
 }

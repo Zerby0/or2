@@ -54,6 +54,7 @@ double get_time() {
 _LIST_IMPL(d, double)
 _LIST_IMPL(mv, Move)
 _LIST_IMPL(tm, TabuMove)
+_LIST_IMPL(id, IterData)
 
 void random_points(Instance* inst) {
     srand(inst->seed);
