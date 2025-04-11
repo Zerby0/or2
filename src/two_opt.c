@@ -52,8 +52,15 @@ bool two_opt_once(const Instance* inst, int* tour, double* cost) {
 
 void two_opt_from(const Instance* inst, int* tour, double* cost) {
 	int iter = 0;
-	while (two_opt_once(inst, tour, cost) && !is_out_of_time(inst)) {
-		iter++;
+	if(strcmp(inst->solver, "benders") == 0){
+		while (two_opt_once(inst, tour, cost)) {
+			iter++;
+		}
+	}
+	else {
+		while (two_opt_once(inst, tour, cost) && !is_out_of_time(inst)) {
+			iter++;
+		}
 	}
 	debug(40, "2-opt: %d iterations, cost: %f\n", iter, *cost);
 }

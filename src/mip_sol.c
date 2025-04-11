@@ -286,6 +286,11 @@ double patch_heuristic(Instance *inst, Cycles *cycles, const double *xstar) {
 	compute_tour_cost(inst, succ);
 	debug(30, "Patched tour cost: %f\n", objval);
 	reconstruct_tour(inst, cycles, objval);
+	if(inst->two_opt){
+		two_opt(inst);
+		objval = inst->sol_cost;
+		debug(30, "Patched tour cost after 2-opt: %f\n", objval);
+	}
 	return objval;
 }
 
