@@ -47,7 +47,7 @@ void nearest_neighbor_all_starts(Instance* inst) {
 		int start = (s0 + delta) % inst->num_nodes;
 		double c = nearest_neighbor_from(inst, tour, start);
 		if (inst->two_opt)
-			two_opt_from(inst, tour, &c);
+			two_opt_from(inst, tour, &c, true);
 		debug(50, "NN from %d: cost = %f\n", start, c);
 		update_sol(inst, tour, c);
 	}

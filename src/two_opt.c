@@ -50,19 +50,13 @@ bool two_opt_once(const Instance* inst, int* tour, double* cost) {
 	}
 }
 
-void two_opt_from(const Instance* inst, int* tour, double* cost) {
+void two_opt_from(const Instance* inst, int* tour, double* cost, bool check_time) {
+	double cost0 = *cost;
 	int iter = 0;
-	if(strcmp(inst->solver, "benders") == 0){
-		while (two_opt_once(inst, tour, cost)) {
-			iter++;
-		}
+	while (two_opt_once(inst, tour, cost) && !(check_time && is_out_of_time(inst))) {
+		iter++;
 	}
-	else {
-		while (two_opt_once(inst, tour, cost) && !is_out_of_time(inst)) {
-			iter++;
-		}
-	}
-	debug(40, "2-opt: %d iterations, cost: %f\n", iter, *cost);
+	debug(40, "2-opt: %d iterations, cost: %f  [%f]\n", iter, *cost, *cost - cost0);
 }
 
 void two_opt(Instance* inst) {
@@ -77,6 +71,6 @@ void two_opt(Instance* inst) {
     int tour[inst->num_nodes];
 	memcpy(tour, inst->sol, inst->num_nodes * sizeof(int));
 	double cost = inst->sol_cost;
-	two_opt_from(inst, tour, &cost);
+	two_opt_from(inst, tour, &cost, true);
     update_sol(inst, tour, cost);
 }

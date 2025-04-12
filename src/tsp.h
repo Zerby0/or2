@@ -89,7 +89,7 @@ void extra_milage(Instance* inst);
 bool two_opt_best(const Instance* inst, int* tour, bool only_improving, Move* out_move, double* out_delta);
 void two_opt_apply(const Instance* inst, int* tour, double* cost, Move move, double delta);
 bool two_opt_once(const Instance* inst, int* tour, double* cost);
-void two_opt_from(const Instance* inst, int* tour, double* cost);
+void two_opt_from(const Instance* inst, int* tour, double* cost, bool check_time);
 void two_opt(Instance* inst);
 void variable_neigh_search(Instance* inst);
 void tabu_search(Instance* inst);

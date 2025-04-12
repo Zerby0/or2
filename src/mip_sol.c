@@ -12,7 +12,7 @@ typedef struct {
 	int ncomp;  // number of connected components
 } Cycles;
 
-#define _c(what) if (error = what) { \
+#define _c(what) if ((error = what)) { \
 	fatal_error("CPLEX error in %s: %d\n", #what, error); \
 }
 
@@ -171,7 +171,7 @@ void add_sec_constraints(const Instance *inst, CPXENVptr env, CPXLPptr lp, const
 	write_problem(inst, env, lp);
 }
 
-void reconstruct_tour(Instance *inst, const Cycles* cycles, double objval) {
+void reconstruct_tour(Instance *inst, const Cycles* cycles, double* objval) {
 	int n = inst->num_nodes;
 	int tour[n];
 	int current = 0;
@@ -180,10 +180,13 @@ void reconstruct_tour(Instance *inst, const Cycles* cycles, double objval) {
 		current = cycles->succ[current];
 	}
 	assert(current == 0);
+	if (inst->two_opt){
+		two_opt_from(inst, tour, objval, false);
+	}
 	if (inst->verbose >= 90) {
 		plot_solution(inst, tour);
 	}
-	update_sol(inst, tour, objval);
+	update_sol(inst, tour, *objval);
 }
 
 void invert_cycle(Instance* inst, int *succ, int start) {
@@ -251,19 +254,19 @@ double patch_heuristic(Instance *inst, Cycles *cycles, const double *xstar) {
         if (best_i < 0 || best_j < 0) {
 			fatal_error("No valid pair best_i %d, best_j %d\n", best_i, best_j); 
 		}
-		debug(40, "Best pair: %d, %d; where j belongs to %d and i belongs to %d\n", best_i, best_j, cycles->comp[best_j], cycles->comp[best_i]);
+		debug(80, "Best pair: (%d, %d) on components (%d, %d), cost %f\n", best_i, best_j, cycles->comp[best_i], cycles->comp[best_j], best_cost);
 
 		int after_i = succ[best_i];
 		int after_j = succ[best_j];
 		
 		if(choose_with_delta(inst, best_i, best_j, succ)){
-			debug(40, "Patching: %d -> %d, %d -> %d with invert_cycle\n", best_j, after_i, best_i, after_j);
+			debug(80, "Patching: %d -> %d, %d -> %d with invert_cycle\n", best_j, after_i, best_i, after_j);
 			invert_cycle(inst, succ, best_j);
 			succ[best_i] = best_j;
 			succ[after_j] = after_i;
 		}
 		else{
-			debug(40, "Patching: %d -> %d, %d -> %d\n", best_i, after_j, best_j, after_i);
+			debug(80, "Patching: %d -> %d, %d -> %d\n", best_i, after_j, best_j, after_i);
 			succ[best_i] = after_j;
 			succ[best_j] = after_i;
 		}
@@ -285,12 +288,7 @@ double patch_heuristic(Instance *inst, Cycles *cycles, const double *xstar) {
 	}
 	compute_tour_cost(inst, succ);
 	debug(30, "Patched tour cost: %f\n", objval);
-	reconstruct_tour(inst, cycles, objval);
-	if(inst->two_opt){
-		two_opt(inst);
-		objval = inst->sol_cost;
-		debug(30, "Patched tour cost after 2-opt: %f\n", objval);
-	}
+	reconstruct_tour(inst, cycles, &objval);
 	return objval;
 }
 
@@ -362,7 +360,7 @@ void benders_method(Instance *inst) {
 
 		if (cycles.ncomp == 1) {
 			// only one cycle -> valid tour
-			reconstruct_tour(inst, &cycles, lowerbound);
+			reconstruct_tour(inst, &cycles, &lowerbound);
 			inst_plot_iter_data(inst, lowerbound, lowerbound);
 			break;
 		} else {
