@@ -163,7 +163,9 @@ void add_sec_constraints(const Instance *inst, CPXENVptr env, CPXLPptr lp, const
 		}
 		assert(comp_size >= 3);
 		assert(nnz == comp_size * (comp_size - 1) / 2);
+		//remove cast double
 		double rhs = (double)comp_size - 1.0; // right hand side is |S| - 1
+		//how to make the name unique: append the current number of rows 
 		sprintf(constrname, "SEC_comp%d_size%d", c, comp_size);
 		char* cname[1] = {constrname};
 		_c(CPXaddrows(env, lp, 0, 1, nnz, &rhs, &sense_less, &rmatbegin, index, value, NULL, cname));
@@ -171,6 +173,7 @@ void add_sec_constraints(const Instance *inst, CPXENVptr env, CPXLPptr lp, const
 	write_problem(inst, env, lp);
 }
 
+//add a comment to improve with 2_opt or define 2-opt in another function
 void reconstruct_tour(Instance *inst, const Cycles* cycles, double* objval) {
 	int n = inst->num_nodes;
 	int tour[n];
@@ -222,6 +225,7 @@ double get_delta2(const Instance *inst, int i, int j, int *succ) {
 bool choose_with_delta(const Instance *inst, int i, int j, int *succ) {
 	return get_delta1(inst, i, j, succ) < get_delta2(inst, i , j, succ);
 }
+
 
 double patch_heuristic(Instance *inst, Cycles *cycles, const double *xstar) {
 	debug(50, "Patching...\n");
@@ -278,6 +282,8 @@ double patch_heuristic(Instance *inst, Cycles *cycles, const double *xstar) {
 			}
 		}
 
+        //check if the inverted cycle is valid
+
 		ncomp--;
 	}
 	
@@ -291,6 +297,8 @@ double patch_heuristic(Instance *inst, Cycles *cycles, const double *xstar) {
 	reconstruct_tour(inst, cycles, &objval);
 	return objval;
 }
+
+//on the plot we need to take the best lower bound
 
 void benders_method(Instance *inst) {
 	int error = 0;
