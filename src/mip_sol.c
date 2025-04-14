@@ -41,7 +41,7 @@ void write_problem(const Instance *inst, CPXENVptr env, CPXLPptr lp) {
 	}
 }
 
-void build_base_model(Instance *inst, CPXENVptr env, CPXLPptr lp) {
+void build_base_model(const Instance *inst, CPXENVptr env, CPXLPptr lp) {
 	int n = inst->num_nodes;
 
 	int error;
@@ -163,9 +163,7 @@ void add_sec_constraints(const Instance *inst, CPXENVptr env, CPXLPptr lp, const
 		}
 		assert(comp_size >= 3);
 		assert(nnz == comp_size * (comp_size - 1) / 2);
-		//remove cast double
-		double rhs = (double)comp_size - 1.0; // right hand side is |S| - 1
-		//how to make the name unique: append the current number of rows 
+		double rhs = comp_size - 1.0; // right hand side is |S| - 1
 		sprintf(constrname, "SEC_comp%d_size%d", c, comp_size);
 		char* cname[1] = {constrname};
 		_c(CPXaddrows(env, lp, 0, 1, nnz, &rhs, &sense_less, &rmatbegin, index, value, NULL, cname));
@@ -173,17 +171,18 @@ void add_sec_constraints(const Instance *inst, CPXENVptr env, CPXLPptr lp, const
 	write_problem(inst, env, lp);
 }
 
-//add a comment to improve with 2_opt or define 2-opt in another function
-void reconstruct_tour(Instance *inst, const Cycles* cycles, double* objval) {
+// reconstruct the tour permutation from `cycles`, runs 2-top, updates the incumbent
+void build_incumbent_sol(Instance *inst, const Cycles* cycles, double* objval) {
 	int n = inst->num_nodes;
 	int tour[n];
 	int current = 0;
 	for (int i = 0; i < n; ++i) {
+		if (i) assert(current != 0);
 		tour[i] = current;
 		current = cycles->succ[current];
 	}
 	assert(current == 0);
-	if (inst->two_opt){
+	if (inst->two_opt) {
 		two_opt_from(inst, tour, objval, false);
 	}
 	if (inst->verbose >= 90) {
@@ -192,7 +191,7 @@ void reconstruct_tour(Instance *inst, const Cycles* cycles, double* objval) {
 	update_sol(inst, tour, *objval);
 }
 
-void invert_cycle(Instance* inst, int *succ, int start) {
+void invert_cycle(const Instance* inst, int *succ, int start) {
 	int n = inst->num_nodes;
     int prev = start;
     int current = succ[start];
@@ -222,69 +221,61 @@ double get_delta2(const Instance *inst, int i, int j, int *succ) {
 	return delta2;
 }
 
-bool choose_with_delta(const Instance *inst, int i, int j, int *succ) {
-	return get_delta1(inst, i, j, succ) < get_delta2(inst, i , j, succ);
-}
-
-
-double patch_heuristic(Instance *inst, Cycles *cycles, const double *xstar) {
+// modifies `cycles` to only have a single compoent
+double patch_heuristic(Instance *inst, Cycles *cycles) {
 	debug(50, "Patching...\n");
 	if (cycles->ncomp <= 1) return -1;
     int n = inst->num_nodes;
     int ncomp = cycles->ncomp;
-	int* succ = cycles->succ;
+	int *succ = cycles->succ, *comp = cycles->comp;
 
 	// find the best pair of components to merge and merge them
-    while (1) {
-		if (ncomp <= 1) break;
+    while (ncomp > 1) {
         int best_i = -1, best_j = -1;
+		bool best_inversion;
         double best_cost = INF_COST;
 
         for (int i = 0; i < n; ++i) {
             for (int j = 0; j < n; ++j) {
-                if (cycles->comp[i] != cycles->comp[j]) {
-                    double delta1 = get_delta1(inst, i, j, succ);
-					double delta2 = get_delta2(inst, i, j, succ);
-					double delta = min(delta1, delta2);
-					if (delta < best_cost) {
-						best_cost = delta;
-						best_i = i;
-						best_j = j;
-					}
+                if (comp[i] == comp[j]) continue;
+				double delta1 = get_delta1(inst, i, j, succ);
+				double delta2 = get_delta2(inst, i, j, succ);
+				double delta = min(delta1, delta2);
+				if (delta < best_cost) {
+					best_cost = delta;
+					best_inversion = delta1 < delta2;
+					best_i = i;
+					best_j = j;
                 }
             }
         }
         
-        if (best_i < 0 || best_j < 0) {
-			fatal_error("No valid pair best_i %d, best_j %d\n", best_i, best_j); 
-		}
-		debug(80, "Best pair: (%d, %d) on components (%d, %d), cost %f\n", best_i, best_j, cycles->comp[best_i], cycles->comp[best_j], best_cost);
+		assert(best_i != -1 && best_j != -1);
+		debug(80, "Best pair: (%d, %d) on components (%d, %d), cost %f\n", best_i, best_j, comp[best_i], comp[best_j], best_cost);
 
 		int after_i = succ[best_i];
 		int after_j = succ[best_j];
-		
-		if(choose_with_delta(inst, best_i, best_j, succ)){
+		if (best_inversion) {
 			debug(80, "Patching: %d -> %d, %d -> %d with invert_cycle\n", best_j, after_i, best_i, after_j);
 			invert_cycle(inst, succ, best_j);
 			succ[best_i] = best_j;
 			succ[after_j] = after_i;
-		}
-		else{
+		} else{
 			debug(80, "Patching: %d -> %d, %d -> %d\n", best_i, after_j, best_j, after_i);
 			succ[best_i] = after_j;
 			succ[best_j] = after_i;
 		}
 		
-		int old_comp = cycles->comp[best_j];
-		for (int i = 0; i < n; ++i) {
-			if (cycles->comp[i] == old_comp) {
-				cycles->comp[i] = cycles->comp[best_i];
+		int old_comp = comp[best_j];
+		int new_comp = comp[best_i];
+		for (int h = 0; h < n; ++h) {
+			if (comp[h] == old_comp) {
+				comp[h] = new_comp;
 			}
 		}
-
-        //check if the inverted cycle is valid
-
 		ncomp--;
+
+        // TODO: check if the `cycle` structure is still consistent
 	}
 	
 	// reconstruct the tour
@@ -292,13 +283,10 @@ double patch_heuristic(Instance *inst, Cycles *cycles, const double *xstar) {
 	for (int i = 0; i < n; ++i) {
 		objval += get_cost(inst, i, succ[i]);
 	}
-	compute_tour_cost(inst, succ);
 	debug(30, "Patched tour cost: %f\n", objval);
-	reconstruct_tour(inst, cycles, &objval);
+	build_incumbent_sol(inst, cycles, &objval);
 	return objval;
 }
-
-//on the plot we need to take the best lower bound
 
 void benders_method(Instance *inst) {
 	int error = 0;
@@ -331,11 +319,8 @@ void benders_method(Instance *inst) {
 	int iteration = 0;
 	double xstar[num_cols];
 
-	int succ[n];
-	int comp[n];
-	Cycles cycles;
-	cycles.succ = succ;
-	cycles.comp = comp;
+	int succ[n], comp[n];
+	Cycles cycles = { succ, comp, -1 };
 
 	while (!is_out_of_time(inst)) {
 		iteration++;
@@ -347,16 +332,17 @@ void benders_method(Instance *inst) {
 		double start = get_time();
 		_c(CPXmipopt(env, lp));
 		double elapsed = get_time() - start;
-		debug(30, "CPLEX took %f seconds\n", elapsed);
+		debug(30, "CPLEX took %f seconds\n", elapsed); // TODO: table-like prints
 
 		int status;
-		double lowerbound; // when ncomp>1 this is a lowerbound to the cost
+		double lowerbound; // when ncomp>1 this is a lowerbound to the TSP cost, otherwise it is the optimal cost up to tolerance
 		_c(CPXsolution(env, lp, &status, &lowerbound, xstar, NULL, NULL, NULL));
+		_c(CPXgetbestobjval(env, lp, &lowerbound)); // this will be a lowerbound even if mipopt ran out of time
 		if (status == CPXMIP_TIME_LIM_FEAS || status == CPXMIP_TIME_LIM_INFEAS) {
 			debug(10, "MIP optimization timed out, building a feasible sol with patch heuristic\n");
 			find_cycles(inst, xstar, &cycles);
-			double cost = patch_heuristic(inst, &cycles, xstar);
-			inst_plot_cost(inst, cost); // we don't have a lowerbound since xstar is not optimal
+			double cost = patch_heuristic(inst, &cycles);
+			inst_plot_iter_data(inst, lowerbound, cost); // this lowerbound could be worse then earlier since cstar is not optimal
 			break;
 		}
 		if (!(status == CPXMIP_OPTIMAL || status == CPXMIP_OPTIMAL_TOL)) {
@@ -368,8 +354,8 @@ void benders_method(Instance *inst) {
 
 		if (cycles.ncomp == 1) {
 			// only one cycle -> valid tour
-			reconstruct_tour(inst, &cycles, &lowerbound);
-			inst_plot_iter_data(inst, lowerbound, lowerbound);
+			build_incumbent_sol(inst, &cycles, &lowerbound);
+			inst_plot_iter_data(inst, lowerbound, lowerbound); // optimal -> lowerbound == cost
 			break;
 		} else {
 			// multiple cycles -> unfeasible sol -> add one SEC for each cycle
@@ -377,7 +363,7 @@ void benders_method(Instance *inst) {
 				plot_infeasible_solution(inst, xstar);
 			}
 			add_sec_constraints(inst, env, lp, &cycles);
-			double cost = patch_heuristic(inst, &cycles, xstar); // after SEC since this modifies `cycles`
+			double cost = patch_heuristic(inst, &cycles); // after SEC since this modifies `cycles`
 			inst_plot_iter_data(inst, lowerbound, cost);
 		}
 	}

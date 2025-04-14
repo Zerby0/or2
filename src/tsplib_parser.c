@@ -9,7 +9,7 @@
 double calc_cost(const Instance* inst, int i, int j) {
 	double dx = inst->x_coords[i] - inst->x_coords[j];
 	double dy = inst->y_coords[i] - inst->y_coords[j];
-	return sqrt(dx*dx + dy*dy);
+	return round(sqrt(dx*dx + dy*dy));
 }
 
 int parse_tsp_file(Instance *inst, const char* filename) {
