@@ -1,10 +1,10 @@
+#include "tsp.h"
+
 #include <assert.h>
 #include <stdio.h>
 #include <stdbool.h>
 
 #include <ilcplex/cplex.h>
-
-#include "tsp.h"
 
 typedef struct {
 	int* succ;   // successor in the cycle
@@ -241,6 +241,15 @@ void build_incumbent_sol(Instance *inst, const Cycles* cycles, double* objval) {
 	update_sol(inst, tour, *objval);
 }
 
+// transforms a FEASIBLE solution into a CPLEX solution
+void build_cplex_sol(const Instance* inst, const Cycles* cycles, int* ind, double* x) {
+	assert(cycles->ncomp == 1);
+	int n = inst->num_nodes, nc = inst->num_cols;
+	for (int j=0; j<nc; j++) ind[j] = j;
+	for (int j=0; j<nc; j++) x[j] = 0;
+	for (int i=0; i<n; i++) x[xpos(inst, i, cycles->succ[i])] = 1.0;
+}
+
 void invert_cycle(const Instance* inst, int *succ, int start) {
 	int n = inst->num_nodes;
     int prev = start;
@@ -272,15 +281,13 @@ double get_delta2(const Instance *inst, int i, int j, int *succ) {
 }
 
 // modifies `cycles` to only have a single compoent
-double patch_heuristic(Instance *inst, Cycles *cycles) {
-	debug(50, "Patching...\n");
+double patch_heuristic(const Instance *inst, Cycles *cycles) {
 	if (cycles->ncomp <= 1) return -1;
     int n = inst->num_nodes;
-    int ncomp = cycles->ncomp;
 	int *succ = cycles->succ, *comp = cycles->comp;
 
 	// find the best pair of components to merge and merge them
-    while (ncomp > 1) {
+    while (cycles->ncomp > 1) {
         int best_i = -1, best_j = -1;
 		bool best_inversion;
         double best_cost = INF_COST;
@@ -323,7 +330,7 @@ double patch_heuristic(Instance *inst, Cycles *cycles) {
 				comp[h] = new_comp;
 			}
 		}
-		ncomp--;
+		cycles->ncomp--;
 
         // TODO: check if the `cycle` structure is still consistent
 	}
@@ -334,7 +341,6 @@ double patch_heuristic(Instance *inst, Cycles *cycles) {
 		objval += get_cost(inst, i, succ[i]);
 	}
 	debug(30, "Patched tour cost: %f\n", objval);
-	build_incumbent_sol(inst, cycles, &objval);
 	return objval;
 }
 
@@ -342,7 +348,7 @@ static int cplex_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void
 	const Instance *inst = (Instance*) userhandle;
 	int n = inst->num_nodes, ncols = inst->num_cols;
 	int error;
-	double* xstar = malloc(ncols * sizeof(double));
+	double xstar[ncols];
 	double objval;
 	_c(CPXcallbackgetcandidatepoint(context, xstar, 0, ncols - 1, &objval));
 	int succ[n], comp[n];
@@ -355,8 +361,13 @@ static int cplex_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void
 		sec_generate(inst, &cycles, &s);
 		_c(CPXcallbackrejectcandidate(context, s.rcnt, s.nzcnt, s.rhs, s.sense, s.rmatbeg, s.rmatind, s.rmatval));
 		sec_free(inst, &s);
+		if (inst->bc_posting) {
+			double hc = patch_heuristic(inst, &cycles);
+			int ind[ncols];
+			build_cplex_sol(inst, &cycles, ind, xstar);
+			_c(CPXcallbackpostheursoln(context, ncols, ind, xstar, hc, CPXCALLBACKSOLUTION_NOCHECK));
+		}
 	}
-	free(xstar);
 	return 0;
 }
 
@@ -428,6 +439,7 @@ void benders_method(Instance *inst) {
 			debug(10, "MIP optimization timed out, building a feasible sol with patch heuristic\n");
 			find_cycles(inst, xstar, &cycles);
 			double cost = patch_heuristic(inst, &cycles);
+			build_incumbent_sol(inst, &cycles, &cost);
 			inst_plot_iter_data(inst, lowerbound, cost); // this lowerbound could be worse then earlier since cstar is not optimal
 			break;
 		}
@@ -450,6 +462,7 @@ void benders_method(Instance *inst) {
 			}
 			add_sec_constraints(inst, env, lp, &cycles);
 			double cost = patch_heuristic(inst, &cycles); // after SEC since this modifies `cycles`
+			build_incumbent_sol(inst, &cycles, &cost);
 			inst_plot_iter_data(inst, lowerbound, cost);
 		}
 	}

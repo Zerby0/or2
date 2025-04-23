@@ -1,5 +1,6 @@
 #include "tsp.h"
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,6 +12,8 @@
 	else if (strcmp(argv[i], name) == 0) inst->field = argv[++i]
 #define _argb(name, field) \
 	else if (strcmp(argv[i], name) == 0) inst->field = true
+#define _argnb(name, field) \
+	else if (strcmp(argv[i], name) == 0) inst->field = false
 #define _argf(name, field) \
 	else if (strcmp(argv[i], name) == 0) inst->field = atof(argv[++i])
 
@@ -18,6 +21,7 @@ int parse_arguments(int argc, char *argv[], Instance *inst) {
 	inst->seed = 42;
 	inst->file = "data/d198.tsp";
 	inst->solver = "basic";
+	inst->bc_posting = true;
 	
     for (int i = 1; i < argc; i++) {
 		if (0);
@@ -39,6 +43,7 @@ int parse_arguments(int argc, char *argv[], Instance *inst) {
 		_argf("--time-limit", time_limit);
 		_argb("--perf-profile", perf_profile);
 		_args("--write-prob", write_prob);
+		_argnb("--no-posting", bc_posting);
 		else {
 			fprintf(stderr, "Unknown option: %s\n", argv[i]);
 			return -1;

@@ -28,6 +28,7 @@ typedef struct {
 	bool plot_cost;    // plot the cost of the solution per iteration
 	bool perf_profile; // run the performance profiler
 	char* write_prob;  // write the CPLEX problem to a file
+	bool bc_posting;   // do solution posting during B&C using heuristics
 	// input data
     int num_nodes;     // Number of nodes
 	int num_cols;      // Number of columns in the MIP problem
