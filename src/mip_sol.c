@@ -12,6 +12,15 @@ typedef struct {
 	int ncomp;  // number of connected components
 } Cycles;
 
+typedef struct {
+	int rcnt, nzcnt;
+	double *rhs;
+	char *sense;
+	int *rmatbeg, *rmatind;
+	double *rmatval;
+	char **rowname;
+} SecData;
+
 #define _c(what) if ((error = what)) { \
 	fatal_error("CPLEX error in %s: %d\n", #what, error); \
 }
@@ -134,40 +143,80 @@ void find_cycles(const Instance *inst, const double *xstar, Cycles* cycles) {
 	}
 }
 
+void sec_alloc(const Instance* inst, SecData* s) {
+	int maxrows = inst->num_nodes;
+	int cols = inst->num_cols;
+	s->rmatbeg = malloc(maxrows * sizeof(int));
+	s->rmatind = malloc(cols * sizeof(int));
+	s->rmatval = malloc(cols * sizeof(double));
+	s->rhs = malloc(maxrows * sizeof(double));
+	s->sense = malloc(maxrows * sizeof(char));
+	if (inst->write_prob) {
+		s->rowname = malloc(maxrows * sizeof(char*));
+		for (int i = 0; i < maxrows; i++) {
+			s->rowname[i] = malloc(64 * sizeof(char));
+		}
+	} else {
+		s->rowname = NULL;
+	}
+}
 
-void add_sec_constraints(const Instance *inst, CPXENVptr env, CPXLPptr lp, const Cycles* cycles) {
+void sec_free(const Instance* inst, SecData* s) {
+	int maxrows = inst->num_nodes;
+	free(s->rmatbeg);
+	free(s->rmatind);
+	free(s->rmatval);
+	free(s->rhs);
+	free(s->sense);
+	if (s->rowname) {
+		for (int i = 0; i < maxrows; i++) {
+			free(s->rowname[i]);
+		}
+		free(s->rowname);
+	}
+}
+
+void sec_generate(const Instance *inst, const Cycles* cycles, SecData* s) {
 	int error;
 	int n = inst->num_nodes;
 	int ncomp = cycles->ncomp;
 	assert(ncomp > 1);
 
-	int cols = CPXgetnumcols(env, lp);
-	int index[cols];
-	double value[cols];
-	char sense_less = 'L';
-	char constrname[100];
-	int rmatbegin = 0;
+	int cols = inst->num_cols;
+	s->rcnt = ncomp;
+	s->nzcnt = 0;
 
 	for (int c = 1; c <= ncomp; c++) {
-		int nnz = 0, comp_size = 0;
+		int row = c - 1;
+		s->rmatbeg[row] = s->nzcnt;
+		int comp_size = 0;
 		for (int i = 0; i < n; i++) {
 			if (cycles->comp[i] != c) continue;
 			comp_size++;
 			for (int j = i + 1; j < n; j++) {
 				if (cycles->comp[j] != c) continue;
 				// i in S, j in S -> e_ij \in E[S]
-				index[nnz] = xpos(inst, i, j);
-				value[nnz] = 1.0;
-				nnz++;
+				s->rmatind[s->nzcnt] = xpos(inst, i, j);
+				s->rmatval[s->nzcnt] = 1.0;
+				s->nzcnt++;
 			}
 		}
 		assert(comp_size >= 3);
-		assert(nnz == comp_size * (comp_size - 1) / 2);
-		double rhs = comp_size - 1.0; // right hand side is |S| - 1
-		sprintf(constrname, "SEC_comp%d_size%d", c, comp_size);
-		char* cname[1] = {constrname};
-		_c(CPXaddrows(env, lp, 0, 1, nnz, &rhs, &sense_less, &rmatbegin, index, value, NULL, cname));
+		assert(s->nzcnt - s->rmatbeg[row] == comp_size * (comp_size - 1) / 2);
+		s->sense[row] = 'L'; // less than or equal
+		s->rhs[row] = comp_size - 1.0; // right hand side is |S| - 1
+		if (s->rowname)
+			sprintf(s->rowname[row], "SEC_comp%d_size%d", c, comp_size);
 	}
+}
+
+void add_sec_constraints(const Instance *inst, CPXENVptr env, CPXLPptr lp, const Cycles* cycles) {
+	int error;
+	SecData s;
+	sec_alloc(inst, &s);
+	sec_generate(inst, cycles, &s);
+	_c(CPXaddrows(env, lp, 0, s.rcnt, s.nzcnt, s.rhs, s.sense, s.rmatbeg, s.rmatind, s.rmatval, NULL, s.rowname));
+	sec_free(inst, &s);
 	write_problem(inst, env, lp);
 }
 
@@ -315,7 +364,7 @@ void benders_method(Instance *inst) {
 	// start with the base model without any SEC
 	build_base_model(inst, env, lp);
 
-	int num_cols = CPXgetnumcols(env, lp);
+	int num_cols = inst->num_cols = CPXgetnumcols(env, lp);
 	int iteration = 0;
 	double xstar[num_cols];
 

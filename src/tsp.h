@@ -30,6 +30,7 @@ typedef struct {
 	char* write_prob;  // write the CPLEX problem to a file
 	// input data
     int num_nodes;     // Number of nodes
+	int num_cols;      // Number of columns in the MIP problem
     double* x_coords;  // Array for x coordinates
     double* y_coords;  // Array for y coordinates
     double* costs_array; //array for the costs of the edges
