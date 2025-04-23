@@ -231,6 +231,7 @@ void build_incumbent_sol(Instance *inst, const Cycles* cycles, double* objval) {
 		current = cycles->succ[current];
 	}
 	assert(current == 0);
+	*objval = compute_tour_cost(inst, tour); // recompute cost to overcome CPLEX numeric tolerance
 	if (inst->two_opt) {
 		two_opt_from(inst, tour, objval, false);
 	}
@@ -337,29 +338,64 @@ double patch_heuristic(Instance *inst, Cycles *cycles) {
 	return objval;
 }
 
-void benders_method(Instance *inst) {
+static int cplex_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void *userhandle) {
+	const Instance *inst = (Instance*) userhandle;
+	int n = inst->num_nodes, ncols = inst->num_cols;
+	int error;
+	double* xstar = malloc(ncols * sizeof(double));
+	double objval;
+	_c(CPXcallbackgetcandidatepoint(context, xstar, 0, ncols - 1, &objval));
+	int succ[n], comp[n];
+	Cycles cycles = { succ, comp, -1 };
+	find_cycles(inst, xstar, &cycles);
+	debug(30, "Found %d component(s) in callback\n", cycles.ncomp);
+	if (cycles.ncomp > 1) {
+		SecData s;
+		sec_alloc(inst, &s);
+		sec_generate(inst, &cycles, &s);
+		_c(CPXcallbackrejectcandidate(context, s.rcnt, s.nzcnt, s.rhs, s.sense, s.rmatbeg, s.rmatind, s.rmatval));
+		sec_free(inst, &s);
+	}
+	free(xstar);
+	return 0;
+}
+
+void open_cplex(const Instance* inst, CPXENVptr* env, CPXLPptr* lp) {
 	int error = 0;
-	CPXENVptr env = NULL;
-	CPXLPptr lp = NULL;
 	int n = inst->num_nodes;
-	inst_init_plot(inst);
 
 	debug(40, "Initializing CPLEX environment...\n");
-	env = CPXopenCPLEX(&error);
-	if (env == NULL) {
+	*env = CPXopenCPLEX(&error);
+	if (*env == NULL) {
 		char errmsg[CPXMESSAGEBUFSIZE];
-		CPXgeterrorstring(env, error, errmsg);
+		CPXgeterrorstring(*env, error, errmsg);
 		fatal_error("Could not open CPLEX environment: %s\n", errmsg);
 	}
 
-	CPXsetintparam(env, CPX_PARAM_THREADS, 1); // use a single thread for now
-	CPXsetintparam(env, CPX_PARAM_SCRIND, (inst->verbose >= 50) ? CPX_ON : CPX_OFF);
-	CPXsetintparam(env, CPX_PARAM_MIPDISPLAY /* 0 to 5 */, max(0, (inst->verbose - 50) / 10));
+	CPXsetintparam(*env, CPX_PARAM_THREADS, 1); // use a single thread for now
+	CPXsetintparam(*env, CPX_PARAM_SCRIND, (inst->verbose >= 50) ? CPX_ON : CPX_OFF);
+	CPXsetintparam(*env, CPX_PARAM_MIPDISPLAY /* 0 to 5 */, max(0, (inst->verbose - 50) / 10));
+	if (inst->time_limit > 0)
+		CPXsetdblparam(*env, CPX_PARAM_TILIM, get_remaining_time(inst));
 
-	lp = CPXcreateprob(env, &error, "TSP_Benders");
-	if (lp == NULL) {
+	*lp = CPXcreateprob(*env, &error, "TSP_Benders");
+	if (*lp == NULL) {
 		fatal_error("Failed to create CPLEX problem.\n");
 	}
+}
+
+void close_cplex(CPXENVptr* env, CPXLPptr* lp) {
+	if (*lp != NULL) CPXfreeprob(*env, lp);
+	if (*env != NULL) CPXcloseCPLEX(env);
+}
+
+void benders_method(Instance *inst) {
+	int n = inst->num_nodes;
+	int error;
+	CPXENVptr env = NULL;
+	CPXLPptr lp = NULL;
+
+	open_cplex(inst, &env, &lp);
 
 	// start with the base model without any SEC
 	build_base_model(inst, env, lp);
@@ -367,6 +403,7 @@ void benders_method(Instance *inst) {
 	int num_cols = inst->num_cols = CPXgetnumcols(env, lp);
 	int iteration = 0;
 	double xstar[num_cols];
+	inst_init_plot(inst);
 
 	int succ[n], comp[n];
 	Cycles cycles = { succ, comp, -1 };
@@ -419,10 +456,43 @@ void benders_method(Instance *inst) {
 
 	debug(20, "Benders required %d iterations\n", iteration);
 
-	if (lp != NULL) {
-		CPXfreeprob(env, &lp);
+	close_cplex(&env, &lp);
+}
+
+void branch_and_cut(Instance* inst) {
+	int n = inst->num_nodes;
+	int error;
+	CPXENVptr env = NULL;
+	CPXLPptr lp = NULL;
+	open_cplex(inst, &env, &lp);
+
+	build_base_model(inst, env, lp);
+	int num_cols = inst->num_cols = CPXgetnumcols(env, lp);
+	
+	CPXLONG contextid = CPX_CALLBACKCONTEXT_CANDIDATE;
+	_c(CPXcallbacksetfunc(env, lp, contextid, cplex_callback, inst));
+
+	double start = get_time();
+	_c(CPXmipopt(env, lp));
+	double elapsed = get_time() - start;
+	debug(30, "CPLEX took %f seconds\n", elapsed);
+
+	int status;
+	double cost;
+	int iteration = 0;
+	double xstar[num_cols];
+	_c(CPXsolution(env, lp, &status, &cost, xstar, NULL, NULL, NULL));
+	if (status == CPXMIP_TIME_LIM_FEAS || status == CPXMIP_TIME_LIM_INFEAS) {
+		debug(10, "MIP optimization timed out, solution in not proven optimal\n");
+	} else if (!(status == CPXMIP_OPTIMAL || status == CPXMIP_OPTIMAL_TOL)) {
+		fatal_error("MIP optimization failed with status %d\n", status);
 	}
-	if (env != NULL) {
-		CPXcloseCPLEX(&env);
-	}
+
+	int succ[n], comp[n];
+	Cycles cycles = { succ, comp, -1 };
+	find_cycles(inst, xstar, &cycles);
+	assert(cycles.ncomp == 1);
+	build_incumbent_sol(inst, &cycles, &cost);
+
+	close_cplex(&env, &lp);
 }

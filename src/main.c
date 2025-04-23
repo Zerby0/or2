@@ -1,6 +1,5 @@
 #include "tsp.h"
 
-#include <locale.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -56,6 +55,7 @@ int solve_instance(Instance *inst) {
 	else if (strcmp(inst->solver, "vns") == 0) variable_neigh_search(inst);
 	else if (strcmp(inst->solver, "tabu") == 0) tabu_search(inst);
 	else if (strcmp(inst->solver, "benders") == 0) benders_method(inst);
+	else if (strcmp(inst->solver, "bc") == 0) branch_and_cut(inst);
 	else {
 		fprintf(stderr, "Unknown solver: %s\n", inst->solver);
 		return -1;

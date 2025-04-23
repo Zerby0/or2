@@ -95,6 +95,7 @@ void two_opt(Instance* inst);
 void variable_neigh_search(Instance* inst);
 void tabu_search(Instance* inst);
 void benders_method(Instance* inst);
+void branch_and_cut(Instance* inst);
 
 void run_perf_profile(Instance* inst);
 
