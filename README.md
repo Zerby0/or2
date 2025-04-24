@@ -10,3 +10,7 @@ Relase build using CMake:
 ```
 mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=Release -DCPLEX_ROOT_DIR=/path/to/cplex/root .. && make
 ```
+
+## Performance Profile 
+
+python src/perfprof.py -D , -T 3600 -S 2 -M 20 perf_prof.csv pp.pdf -P “Name_Graph” -X "ratio"
