@@ -292,8 +292,9 @@ double get_delta2(const Instance *inst, int i, int j, int *succ) {
 }
 
 // modifies `cycles` to only have a single compoent
-double patch_heuristic(const Instance *inst, Cycles *cycles) {
+double patch_heuristic(Instance *inst, Cycles *cycles) {
 	if (cycles->ncomp <= 1) return -1;
+	double start = get_time();
     int n = inst->num_nodes;
 	int *succ = cycles->succ, *comp = cycles->comp;
 
@@ -352,11 +353,12 @@ double patch_heuristic(const Instance *inst, Cycles *cycles) {
 		objval += get_cost(inst, i, succ[i]);
 	}
 	debug(30, "Patched tour cost: %f\n", objval);
+	inst->time_patching += get_time() - start;
 	return objval;
 }
 
 static int cplex_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void *userhandle) {
-	const Instance *inst = (Instance*) userhandle;
+	Instance *inst = (Instance*) userhandle;
 	int n = inst->num_nodes, ncols = inst->num_cols;
 	int error;
 	double xstar[ncols];
@@ -397,9 +399,10 @@ void open_cplex(const Instance* inst, CPXENVptr* env, CPXLPptr* lp) {
 		fatal_error("Could not open CPLEX environment: %s\n", errmsg);
 	}
 
+	CPXsetintparam(*env, CPX_PARAM_RANDOMSEED, inst->seed);
 	CPXsetintparam(*env, CPX_PARAM_THREADS, 1); // use a single thread for now
 	CPXsetintparam(*env, CPX_PARAM_SCRIND, (inst->verbose >= 50) ? CPX_ON : CPX_OFF);
-	CPXsetintparam(*env, CPX_PARAM_MIPDISPLAY /* 0 to 5 */, max(0, (inst->verbose - 50) / 10));
+	CPXsetintparam(*env, CPX_PARAM_MIPDISPLAY, clamp((inst->verbose - 50) / 5, 0, 4));
 	if (inst->time_limit > 0)
 		CPXsetdblparam(*env, CPX_PARAM_TILIM, get_remaining_time(inst));
 

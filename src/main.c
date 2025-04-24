@@ -99,6 +99,8 @@ int main(int argc, char *argv[]) {
 	if (solve_instance(inst) == -1) return -1;
     double took = get_time() - inst->start_time;
     debug(5, "Time: %fs\n", took);
+	if (inst->time_patching > 0) debug(10, "Time patching: %fs\n", inst->time_patching);
+	if (inst->time_twoopt > 0) debug(10, "Time 2-opt: %fs\n", inst->time_twoopt);
 
 	if (inst->sol_cost == INF_COST) {
 		fatal_error("No solution found\n");

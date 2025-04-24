@@ -50,13 +50,15 @@ bool two_opt_once(const Instance* inst, int* tour, double* cost) {
 	}
 }
 
-void two_opt_from(const Instance* inst, int* tour, double* cost, bool check_time) {
+void two_opt_from(Instance* inst, int* tour, double* cost, bool check_time) {
+	double start = get_time();
 	double cost0 = *cost;
 	int iter = 0;
 	while (two_opt_once(inst, tour, cost) && !(check_time && is_out_of_time(inst))) {
 		iter++;
 	}
 	debug(40, "2-opt: %d iterations, cost: %f  [%f]\n", iter, *cost, *cost - cost0);
+	inst->time_twoopt += get_time() - start;
 }
 
 void two_opt(Instance* inst) {
