@@ -220,10 +220,10 @@ void add_sec_constraints(const Instance *inst, CPXENVptr env, CPXLPptr lp, const
 	write_problem(inst, env, lp);
 }
 
-// reconstruct the tour permutation from `cycles`, runs 2-top, updates the incumbent
-void build_incumbent_sol(Instance *inst, const Cycles* cycles, double* objval) {
+// transforsm the cycle representation of the solution into a tour representation
+void cycle_to_tour(const Instance *inst, const Cycles* cycles, int* tour) {
+	assert(cycles->ncomp == 1);
 	int n = inst->num_nodes;
-	int tour[n];
 	int current = 0;
 	for (int i = 0; i < n; ++i) {
 		if (i) assert(current != 0);
@@ -231,6 +231,13 @@ void build_incumbent_sol(Instance *inst, const Cycles* cycles, double* objval) {
 		current = cycles->succ[current];
 	}
 	assert(current == 0);
+}
+
+// reconstruct the tour permutation from `cycles`, runs 2-top, updates the incumbent
+void build_incumbent_sol(Instance *inst, const Cycles* cycles, double* objval) {
+	int n = inst->num_nodes;
+	int tour[n];
+	cycle_to_tour(inst, cycles, tour);
 	*objval = compute_tour_cost(inst, tour); // recompute cost to overcome CPLEX numeric tolerance
 	if (inst->two_opt) {
 		two_opt_from(inst, tour, objval, false);
@@ -241,13 +248,17 @@ void build_incumbent_sol(Instance *inst, const Cycles* cycles, double* objval) {
 	update_sol(inst, tour, *objval);
 }
 
-// transforms a FEASIBLE solution into a CPLEX solution
-void build_cplex_sol(const Instance* inst, const Cycles* cycles, int* ind, double* x) {
-	assert(cycles->ncomp == 1);
-	int n = inst->num_nodes, nc = inst->num_cols;
+// transforms a feasible solution represented as tour into a CPLEX solution
+void tour_to_cplex(const Instance *inst, const int* tour, int* ind, double* x) {
+	int n = inst->num_nodes;
+	int nc = inst->num_cols;
 	for (int j=0; j<nc; j++) ind[j] = j;
 	for (int j=0; j<nc; j++) x[j] = 0;
-	for (int i=0; i<n; i++) x[xpos(inst, i, cycles->succ[i])] = 1.0;
+	for (int i=0; i<n; i++) {
+		int j = (i + 1) % n;
+		int a = tour[i], b = tour[j];
+		x[xpos(inst, a, b)] = 1.0;
+	}
 }
 
 void invert_cycle(const Instance* inst, int *succ, int start) {
@@ -363,8 +374,11 @@ static int cplex_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void
 		sec_free(inst, &s);
 		if (inst->bc_posting) {
 			double hc = patch_heuristic(inst, &cycles);
-			int ind[ncols];
-			build_cplex_sol(inst, &cycles, ind, xstar);
+			int tour[n], ind[ncols];
+			cycle_to_tour(inst, &cycles, tour);
+			if (inst->two_opt) two_opt_from(inst, tour, &hc, false);
+			debug(60, "Posting heuristic solution with cost %f\n", hc);
+			tour_to_cplex(inst, tour, ind, xstar);
 			_c(CPXcallbackpostheursoln(context, ncols, ind, xstar, hc, CPXCALLBACKSOLUTION_NOCHECK));
 		}
 	}
