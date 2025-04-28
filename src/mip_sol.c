@@ -234,7 +234,7 @@ void cycle_to_tour(const Instance *inst, const Cycles* cycles, int* tour) {
 }
 
 // reconstruct the tour permutation from `cycles`, runs 2-top, updates the incumbent
-void build_incumbent_sol(Instance *inst, const Cycles* cycles, double* objval) {
+void update_candidate_sol(Instance *inst, const Cycles* cycles, double* objval) {
 	int n = inst->num_nodes;
 	int tour[n];
 	cycle_to_tour(inst, cycles, tour);
@@ -357,6 +357,29 @@ double patch_heuristic(Instance *inst, Cycles *cycles) {
 	return objval;
 }
 
+void callback_sec(const Instance* inst, CPXCALLBACKCONTEXTptr context, const Cycles* cycles) {
+	int error;
+	SecData s;
+	sec_alloc(inst, &s);
+	sec_generate(inst, cycles, &s);
+	_c(CPXcallbackrejectcandidate(context, s.rcnt, s.nzcnt, s.rhs, s.sense, s.rmatbeg, s.rmatind, s.rmatval));
+	sec_free(inst, &s);
+}
+
+void callback_posting(Instance* inst, CPXCALLBACKCONTEXTptr context, Cycles* cycles) {
+	if (!inst->bc_posting) return;
+	int n = inst->num_nodes, ncols = inst->num_cols;
+	double hc = patch_heuristic(inst, cycles);
+	int tour[n], ind[ncols];
+	cycle_to_tour(inst, cycles, tour);
+	if (inst->two_opt) two_opt_from(inst, tour, &hc, false);
+	debug(60, "Posting heuristic solution with cost %f\n", hc);
+	double xheu[ncols];
+	tour_to_cplex(inst, tour, ind, xheu);
+	int error;
+	_c(CPXcallbackpostheursoln(context, ncols, ind, xheu, hc, CPXCALLBACKSOLUTION_NOCHECK));
+}
+
 static int cplex_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void *userhandle) {
 	Instance *inst = (Instance*) userhandle;
 	int n = inst->num_nodes, ncols = inst->num_cols;
@@ -369,20 +392,8 @@ static int cplex_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void
 	find_cycles(inst, xstar, &cycles);
 	debug(30, "Found %d component(s) in callback\n", cycles.ncomp);
 	if (cycles.ncomp > 1) {
-		SecData s;
-		sec_alloc(inst, &s);
-		sec_generate(inst, &cycles, &s);
-		_c(CPXcallbackrejectcandidate(context, s.rcnt, s.nzcnt, s.rhs, s.sense, s.rmatbeg, s.rmatind, s.rmatval));
-		sec_free(inst, &s);
-		if (inst->bc_posting) {
-			double hc = patch_heuristic(inst, &cycles);
-			int tour[n], ind[ncols];
-			cycle_to_tour(inst, &cycles, tour);
-			if (inst->two_opt) two_opt_from(inst, tour, &hc, false);
-			debug(60, "Posting heuristic solution with cost %f\n", hc);
-			tour_to_cplex(inst, tour, ind, xstar);
-			_c(CPXcallbackpostheursoln(context, ncols, ind, xstar, hc, CPXCALLBACKSOLUTION_NOCHECK));
-		}
+		callback_sec(inst, context, &cycles);
+		callback_posting(inst, context, &cycles);
 	}
 	return 0;
 }
@@ -456,7 +467,7 @@ void benders_method(Instance *inst) {
 			debug(10, "MIP optimization timed out, building a feasible sol with patch heuristic\n");
 			find_cycles(inst, xstar, &cycles);
 			double cost = patch_heuristic(inst, &cycles);
-			build_incumbent_sol(inst, &cycles, &cost);
+			update_candidate_sol(inst, &cycles, &cost);
 			inst_plot_iter_data(inst, lowerbound, cost); // this lowerbound could be worse then earlier since cstar is not optimal
 			break;
 		}
@@ -469,7 +480,7 @@ void benders_method(Instance *inst) {
 
 		if (cycles.ncomp == 1) {
 			// only one cycle -> valid tour
-			build_incumbent_sol(inst, &cycles, &lowerbound);
+			update_candidate_sol(inst, &cycles, &lowerbound);
 			inst_plot_iter_data(inst, lowerbound, lowerbound); // optimal -> lowerbound == cost
 			break;
 		} else {
@@ -479,7 +490,7 @@ void benders_method(Instance *inst) {
 			}
 			add_sec_constraints(inst, env, lp, &cycles);
 			double cost = patch_heuristic(inst, &cycles); // after SEC since this modifies `cycles`
-			build_incumbent_sol(inst, &cycles, &cost);
+			update_candidate_sol(inst, &cycles, &cost);
 			inst_plot_iter_data(inst, lowerbound, cost);
 		}
 	}
@@ -522,7 +533,7 @@ void branch_and_cut(Instance* inst) {
 	Cycles cycles = { succ, comp, -1 };
 	find_cycles(inst, xstar, &cycles);
 	assert(cycles.ncomp == 1);
-	build_incumbent_sol(inst, &cycles, &cost);
+	update_candidate_sol(inst, &cycles, &cost);
 
 	close_cplex(&env, &lp);
 }
