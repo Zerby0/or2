@@ -6,7 +6,8 @@ project(tsp)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # find sources
-file(GLOB_RECURSE SRC CONFIGURE_DEPENDS "src/*.c" "src/*.h")
+file(GLOB_RECURSE SRC CONFIGURE_DEPENDS "src/*.c" "src/*.h" "concorde/*.c" "concorde/*.h")
+include_directories(concorde)
 set(CMAKE_C_STANDARD 17)
 
 # enable sanitizers in debug mode
