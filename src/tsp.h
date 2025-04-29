@@ -29,6 +29,7 @@ typedef struct {
 	bool perf_profile; // run the performance profiler
 	char* write_prob;  // write the CPLEX problem to a file
 	bool bc_posting;   // do solution posting during B&C using heuristics
+	bool bc_fcuts;     // apply fractional cuts during B&C
 	// input data
     int num_nodes;     // Number of nodes
 	int num_cols;      // Number of columns in the MIP problem
@@ -43,6 +44,7 @@ typedef struct {
 	List_id iter_data; // list of costs/bounds per iteration
 	double time_patching; // time spent in patching
 	double time_twoopt;   // time spent in two-opt
+	double time_fcuts;   // time spent computing fractional cuts
 
     //using a single data structure to store the coordinates of the pts can
     //be more efficient so the ram can do only one operation (the data separated are very far on the ram)

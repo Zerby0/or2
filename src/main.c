@@ -22,6 +22,7 @@ int parse_arguments(int argc, char *argv[], Instance *inst) {
 	inst->file = "data/d198.tsp";
 	inst->solver = "basic";
 	inst->bc_posting = true;
+	inst->bc_fcuts = true;
 	
     for (int i = 1; i < argc; i++) {
 		if (0);
@@ -44,6 +45,7 @@ int parse_arguments(int argc, char *argv[], Instance *inst) {
 		_argb("--perf-profile", perf_profile);
 		_args("--write-prob", write_prob);
 		_argnb("--no-posting", bc_posting);
+		_argnb("--no-fcuts", bc_fcuts);
 		else {
 			fprintf(stderr, "Unknown option: %s\n", argv[i]);
 			return -1;
@@ -101,6 +103,7 @@ int main(int argc, char *argv[]) {
     debug(5, "Time: %fs\n", took);
 	if (inst->time_patching > 0) debug(10, "Time patching: %fs\n", inst->time_patching);
 	if (inst->time_twoopt > 0) debug(10, "Time 2-opt: %fs\n", inst->time_twoopt);
+	if (inst->time_fcuts > 0) debug(10, "Time generating fractional cuts: %fs\n", inst->time_fcuts);
 
 	if (inst->sol_cost == INF_COST) {
 		fatal_error("No solution found\n");

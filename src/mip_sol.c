@@ -5,6 +5,7 @@
 #include <stdbool.h>
 
 #include <ilcplex/cplex.h>
+#include <mincut.h>
 
 typedef struct {
 	int* succ;   // successor in the cycle
@@ -19,6 +20,8 @@ typedef struct {
 	int *rmatbeg, *rmatind;
 	double *rmatval;
 	char **rowname;
+	int* purgeable;
+	int* local;
 } SecData;
 
 #define _c(what) if ((error = what)) { \
@@ -146,11 +149,14 @@ void find_cycles(const Instance *inst, const double *xstar, Cycles* cycles) {
 void sec_alloc(const Instance* inst, SecData* s) {
 	int maxrows = inst->num_nodes;
 	int cols = inst->num_cols;
+	s->rcnt = s->nzcnt = 0;
 	s->rmatbeg = malloc(maxrows * sizeof(int));
 	s->rmatind = malloc(cols * sizeof(int));
 	s->rmatval = malloc(cols * sizeof(double));
 	s->rhs = malloc(maxrows * sizeof(double));
 	s->sense = malloc(maxrows * sizeof(char));
+	s->purgeable = malloc(maxrows * sizeof(char));
+	s->local = malloc(maxrows * sizeof(char));
 	if (inst->write_prob) {
 		s->rowname = malloc(maxrows * sizeof(char*));
 		for (int i = 0; i < maxrows; i++) {
@@ -168,6 +174,8 @@ void sec_free(const Instance* inst, SecData* s) {
 	free(s->rmatval);
 	free(s->rhs);
 	free(s->sense);
+	free(s->purgeable);
+	free(s->local);
 	if (s->rowname) {
 		for (int i = 0; i < maxrows; i++) {
 			free(s->rowname[i]);
@@ -352,7 +360,6 @@ double patch_heuristic(Instance *inst, Cycles *cycles) {
 	for (int i = 0; i < n; ++i) {
 		objval += get_cost(inst, i, succ[i]);
 	}
-	debug(30, "Patched tour cost: %f\n", objval);
 	inst->time_patching += get_time() - start;
 	return objval;
 }
@@ -380,8 +387,7 @@ void callback_posting(Instance* inst, CPXCALLBACKCONTEXTptr context, Cycles* cyc
 	_c(CPXcallbackpostheursoln(context, ncols, ind, xheu, hc, CPXCALLBACKSOLUTION_NOCHECK));
 }
 
-static int cplex_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void *userhandle) {
-	Instance *inst = (Instance*) userhandle;
+void candidate_callback(Instance* inst, CPXCALLBACKCONTEXTptr context) {
 	int n = inst->num_nodes, ncols = inst->num_cols;
 	int error;
 	double xstar[ncols];
@@ -390,11 +396,109 @@ static int cplex_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void
 	int succ[n], comp[n];
 	Cycles cycles = { succ, comp, -1 };
 	find_cycles(inst, xstar, &cycles);
-	debug(30, "Found %d component(s) in callback\n", cycles.ncomp);
+	debug(90, "Found %d component(s) in callback\n", cycles.ncomp);
 	if (cycles.ncomp > 1) {
 		callback_sec(inst, context, &cycles);
 		callback_posting(inst, context, &cycles);
 	}
+}
+
+int build_residual_graph(const Instance* inst, const double* xstar, int* elist, double* ecost) {
+	int n = inst->num_nodes;
+	int ecount = 0;
+	for (int i = 0; i < n; i++) {
+		for (int j = i + 1; j < n; j++) {
+			if (xstar[xpos(inst, i, j)] < 1e-4) continue;
+			elist[2*ecount+0] = i;
+			elist[2*ecount+1] = j;
+			ecost[ecount] = xstar[xpos(inst, i, j)];
+			ecount++;
+		}
+	}
+	return ecount;
+}
+
+void add_sec_for_component(const Instance* inst, SecData* s, int compcount, const int* comp) {
+	int n = inst->num_nodes;
+	int row = s->rcnt;
+	if (row == n) {
+		debug(10, "SEC: too many rows\n");
+		return;
+	}
+	if (s->nzcnt + compcount * (compcount - 1) / 2 > inst->num_cols) {
+		debug(10, "SEC: too many addends\n");
+		return;
+	}
+	s->rcnt++;
+	s->rmatbeg[row] = s->nzcnt;
+	for (int i = 0; i < compcount; i++) {
+		for (int j = i + 1; j < compcount; j++) {
+			int a = comp[i], b = comp[j];
+			s->rmatind[s->nzcnt] = xpos(inst, a, b);
+			s->rmatval[s->nzcnt] = 1.0;
+			s->nzcnt++;
+		}
+	}
+	assert(s->nzcnt - s->rmatbeg[row] == compcount * (compcount - 1) / 2);
+	s->sense[row] = 'L'; // less than or equal
+	s->rhs[row] = compcount - 1.0; // right hand side is |S| - 1
+	s->purgeable[row] = CPX_USECUT_FILTER; // can be removed from the cut pool later on
+	s->local[row] = 0; // global cut
+	if (s->rowname)
+		sprintf(s->rowname[0], "SEC_comp%d_size%d", compcount, compcount);
+}
+
+int flow_callback(double cut_value, int compsize, int* comp, void* handle) {
+	void** handle_arr = (void**) handle;
+	const Instance* inst = (const Instance*) handle_arr[0];
+	SecData* s = (SecData*) handle_arr[1];
+	debug(90, "Flow algo found a cut with value %f, size %d\n", cut_value, compsize);
+	add_sec_for_component(inst, s, compsize, comp);
+	return 0;
+}
+
+void relaxation_callback(Instance* inst, CPXCALLBACKCONTEXTptr context) {
+	int error;
+	int depth;
+	_c(CPXcallbackgetinfoint(context, CPXCALLBACKINFO_NODEDEPTH, &depth));
+	if (depth != 0) return; // only run on root node
+
+	double start = get_time();
+	int n = inst->num_nodes, ncols = inst->num_cols;
+	double xstar[ncols];
+	double objval;
+	_c(CPXcallbackgetrelaxationpoint(context, xstar, 0, ncols - 1, &objval));
+	int elist[2 * ncols];
+	double ecost[ncols];
+	int ecount = build_residual_graph(inst, xstar, elist, ecost);
+	int ncomp;
+	int* compscount = NULL, *comps = NULL;
+	_c(CCcut_connect_components(n, ecount, elist, ecost, &ncomp, &compscount, &comps));
+	debug(90, "Residual graph has %d/%d edges, %d components\n", ecount, ncols, ncomp);
+	SecData s;
+	sec_alloc(inst, &s);
+	if (ncomp > 1) { // more then one compoenent: add a SEC for each component
+		int start = 0;
+		for (int i = 0; i < ncomp; i++) {
+			add_sec_for_component(inst, &s, compscount[i], comps + start);
+			start += compscount[i];
+		}
+	} else { // only one component: run flow algo to find violated cuts
+		void* handle[2] = { inst, &s };
+		_c(CCcut_violated_cuts(n, ecount, elist, ecost, 1.9, flow_callback, handle));
+	}
+	_c(CPXcallbackaddusercuts(context, s.rcnt, s.nzcnt, s.rhs, s.sense, s.rmatbeg, s.rmatind, s.rmatval, s.purgeable, s.local));
+	sec_free(inst, &s);
+	inst->time_fcuts += get_time() - start;
+	CC_IFFREE(compscount, int);
+	CC_IFFREE(comps, int);
+}
+
+static int cplex_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void *userhandle) {
+	Instance *inst = (Instance*) userhandle;
+	if (contextid == CPX_CALLBACKCONTEXT_CANDIDATE) candidate_callback(inst, context);
+	else if (contextid == CPX_CALLBACKCONTEXT_RELAXATION) relaxation_callback(inst, context);
+	else fatal_error("Unknown CPLEX callback context: %lld\n", contextid);
 	return 0;
 }
 
@@ -467,6 +571,7 @@ void benders_method(Instance *inst) {
 			debug(10, "MIP optimization timed out, building a feasible sol with patch heuristic\n");
 			find_cycles(inst, xstar, &cycles);
 			double cost = patch_heuristic(inst, &cycles);
+			debug(30, "Patched tour cost: %f\n", cost);
 			update_candidate_sol(inst, &cycles, &cost);
 			inst_plot_iter_data(inst, lowerbound, cost); // this lowerbound could be worse then earlier since cstar is not optimal
 			break;
@@ -490,6 +595,7 @@ void benders_method(Instance *inst) {
 			}
 			add_sec_constraints(inst, env, lp, &cycles);
 			double cost = patch_heuristic(inst, &cycles); // after SEC since this modifies `cycles`
+			debug(30, "Patched tour cost: %f\n", cost);
 			update_candidate_sol(inst, &cycles, &cost);
 			inst_plot_iter_data(inst, lowerbound, cost);
 		}
@@ -511,6 +617,7 @@ void branch_and_cut(Instance* inst) {
 	int num_cols = inst->num_cols = CPXgetnumcols(env, lp);
 	
 	CPXLONG contextid = CPX_CALLBACKCONTEXT_CANDIDATE;
+	if (inst->bc_fcuts) contextid |= CPX_CALLBACKCONTEXT_RELAXATION;
 	_c(CPXcallbacksetfunc(env, lp, contextid, cplex_callback, inst));
 
 	double start = get_time();
