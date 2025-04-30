@@ -38,3 +38,46 @@ void run_perf_profile(Instance* inst) {
 	}
 	free_instance_data(inst);
 }
+
+void solve_grasp(Instance* inst, int k, bool is_last){
+	inst->sol_cost = INF_COST;
+	inst->start_time = get_time();
+	grasp_parameter(inst, k);
+	double took = get_time() - inst->start_time;
+	debug(20, "Solver: grasp_%d, Time: %fs, Cost: %f\n", k, took, inst->sol_cost);
+	printf("%f", inst->sol_cost);
+	if (!is_last) printf(", ");
+}
+
+void perf_profile_tuning_grasp(Instance* inst) {
+	debug(10, "Running performance profile tuning\n");
+	init_instance_data(inst);
+	printf("10, grasp_2, grasp_3, grasp_4, grasp_5, grasp_6, grasp_7, grasp_8, grasp_9, grasp_10, grasp_11\n"); 
+	int base_seed = inst->seed;
+	for(int i = base_seed; i < base_seed + 10; i++) {
+		debug(15, "Running with seed %d\n", i);
+		inst->seed = i;
+		random_inst_data(inst);
+		printf("Instance_%d, ", i-base_seed);
+
+		solve_grasp(inst, 2, 0);
+		solve_grasp(inst, 3, 0);
+		solve_grasp(inst, 4, 0);
+		solve_grasp(inst, 5, 0);
+		solve_grasp(inst, 6, 0);
+		solve_grasp(inst, 7, 0);
+		solve_grasp(inst, 8, 0);
+		solve_grasp(inst, 9, 0);
+		solve_grasp(inst, 10, 0);
+		solve_grasp(inst, 11, 1);
+
+		printf("\n");
+	}
+	free_instance_data(inst);
+}
+
+void run_perf_profile_tuning(Instance* inst){
+	//perf_profile_tuning_vns(inst);
+	//perf_profile_tuning_tabu(inst);
+	perf_profile_tuning_grasp(inst);
+}

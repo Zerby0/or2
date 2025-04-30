@@ -8,6 +8,14 @@ void swap_edge(Edge* a, Edge* b) {
     *b = temp;
 }
 
+void print_heap(const Edge* heap, int size) {
+    printf("Heap contents (size = %d):\n", size);
+    for (int i = 0; i < size; i++) {
+        printf("  [%d] node = %d, cost = %.4f\n", i, heap[i].node, heap[i].cost);
+    }
+    printf("\n");
+}
+
 void heapify_up(Edge* heap, int index) {
     while (index > 0) {
         int parent = (index - 1) / 2;

@@ -27,6 +27,7 @@ typedef struct {
 	bool two_opt;      // Apply two-opt algorithm after the solver
 	bool plot_cost;    // plot the cost of the solution per iteration
 	bool perf_profile; // run the performance profiler
+	bool perf_profile_tuning; // run the performance profiler tuning
 	char* write_prob;  // write the CPLEX problem to a file
 	bool bc_posting;   // do solution posting during B&C using heuristics
 	bool bc_fcuts;     // apply fractional cuts during B&C
@@ -100,10 +101,12 @@ void two_opt(Instance* inst);
 void variable_neigh_search(Instance* inst);
 void tabu_search(Instance* inst);
 void grasp(Instance* inst);
+void grasp_parameter(Instance* inst, int k);
 void benders_method(Instance* inst);
 void branch_and_cut(Instance* inst);
 
 void run_perf_profile(Instance* inst);
+void run_perf_profile_tuning(Instance* inst);
 
 
 // utility macros

@@ -43,6 +43,7 @@ int parse_arguments(int argc, char *argv[], Instance *inst) {
 		_argf("-t", time_limit);
 		_argf("--time-limit", time_limit);
 		_argb("--perf-profile", perf_profile);
+		_argb("--perf-profile-tuning", perf_profile_tuning);
 		_args("--write-prob", write_prob);
 		_argnb("--no-posting", bc_posting);
 		_argnb("--no-fcuts", bc_fcuts);
@@ -81,6 +82,11 @@ int main(int argc, char *argv[]) {
 
 	if (inst->perf_profile) {
 		run_perf_profile(inst);
+		return 0;
+	}
+
+	if(inst->perf_profile_tuning) {
+		run_perf_profile_tuning(inst);
 		return 0;
 	}
 

@@ -263,7 +263,7 @@ double grasp_from(Instance* inst, int* tour, int start, int min_num_edges) {
 			Edge e = { .node = j, .cost = cost };
 			insert_edge(heap, &heap_size, min_num_edges, e);
 		}
-		
+
 		//calculate the probability of each edge
 		double inv_sum = 0;
 		for (int k = 0; k < heap_size; k++) {
@@ -297,12 +297,12 @@ double grasp_from(Instance* inst, int* tour, int start, int min_num_edges) {
 	return tot_cost;
 }
 
-void grasp(Instance* inst) {
+void grasp_parameter(Instance* inst, int k) {
 	int start = rand() % inst->num_nodes;
 	int tour[inst->num_nodes];
 	double cost = 0.0;
 	while (!is_out_of_time(inst)){
-		cost = grasp_from(inst, tour, start, 2);
+		cost = grasp_from(inst, tour, start, k);
 		if (cost < inst->sol_cost) {
 			inst->sol_cost = cost;
 			memcpy(inst->sol, tour, inst->num_nodes * sizeof(int));
@@ -317,4 +317,8 @@ void grasp(Instance* inst) {
 		two_opt_from(inst, tour, &cost, false);
 	}
 	update_sol(inst, tour, cost);
+}
+
+void grasp(Instance* inst) {
+	grasp_parameter(inst, 2);
 }
