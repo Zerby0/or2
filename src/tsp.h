@@ -99,6 +99,7 @@ void two_opt_from(Instance* inst, int* tour, double* cost, bool check_time);
 void two_opt(Instance* inst);
 void variable_neigh_search(Instance* inst);
 void tabu_search(Instance* inst);
+void grasp(Instance* inst);
 void benders_method(Instance* inst);
 void branch_and_cut(Instance* inst);
 

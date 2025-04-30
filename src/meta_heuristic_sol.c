@@ -1,6 +1,8 @@
 #include "list.h"
 #include "tsp.h"
 #include "hash.h"
+#include "max_heap.h"
+
 
 #include <assert.h>
 #include <math.h>
@@ -11,6 +13,10 @@
 #ifndef M_PI
     #define M_PI 3.14159265358979323846
 #endif
+
+double rand_double(void) {
+    return (double)rand() / (double)RAND_MAX;
+}
 
 void gen_random_triplet(int n, int* h, int* j, int* k) {
     int a, b, c;
@@ -80,12 +86,14 @@ void variable_neigh_search(Instance* inst) {
 			random_3opt(inst, tour, &cost);
 		num_3opts++, iter++;
 		inst_plot_cost(inst, cost);
+
 		// local search with 2opt
 		while (two_opt_once(inst, tour, &cost) && !is_out_of_time(inst)) {
 			iter++;
 			inst_plot_cost(inst, cost);
 		}
 		update_sol(inst, tour, cost);
+
 		// update k
 		if (cost < prev_cost - EPS_COST) {
 			k = MIN_K;
@@ -94,6 +102,7 @@ void variable_neigh_search(Instance* inst) {
 		} else {
 			k = min(MAX_K, k + 1);
 		}
+
 		debug(60, "VNS iteration %d, cost = %f -> %f, k = %d\n", iter, prev_cost, cost, k);
 		prev_cost = cost;
 	}
@@ -230,4 +239,73 @@ void tabu_search(Instance* inst) {
     
     cuckoo_free(&tabu_list);
 	free(move_history.buf);
+}
+
+double grasp_from(Instance* inst, int* tour, int start, int min_num_edges) {
+	for(int i = 0; i < inst->num_nodes; i++) {
+		tour[i] = i;
+	}
+	swap(tour, 0, start);
+	if(min_num_edges < 2) {
+		printf("min_num_edges < 2 so becomes 2\n");
+		min_num_edges = 2;
+	}
+	double prob[min_num_edges];
+	double tot_cost = 0;
+	for (int i = 0; i < inst->num_nodes - 1; i++) {
+		Edge heap[min_num_edges];
+		int heap_size = 0;
+		
+		//fill the heap with k minimum edges
+		for (int j = i + 1; j < inst->num_nodes; j++) {
+			int candidate_node = tour[j];
+			double cost = get_cost(inst, tour[i], candidate_node);
+			Edge e = { .node = j, .cost = cost };
+			insert_edge(heap, &heap_size, min_num_edges, e);
+		}
+		
+		//calculate the probability of each edge
+		double inv_sum = 0;
+		for (int k = 0; k < heap_size; k++) {
+			inv_sum += 1.0 / heap[k].cost;
+		}
+		if (inv_sum < 1e-6) inv_sum = 1e-6;
+		for (int k = 0; k < heap_size; k++) {
+			prob[k] = (1.0 / heap[k].cost) / inv_sum;
+		}
+
+		double r = rand_double();
+		double cumulative = 0;
+		int selected = 0;
+		for (int k = 0; k < heap_size; k++) {
+			cumulative += prob[k];
+			if (r <= cumulative) {
+				selected = k;
+				break;
+			}
+		}
+
+		debug(80, "[%d] extending %d -> %d [%f]\n", i, tour[i], tour[heap[selected].node], heap[selected].cost);
+
+		swap(tour, i + 1, heap[selected].node);
+		tot_cost += heap[selected].cost;
+		if (inst->verbose >= 90)
+			plot_partial_sol(inst, tour, i + 2);
+	}
+	int last_node = tour[inst->num_nodes - 1];
+	tot_cost += get_cost(inst, last_node, start);
+	return tot_cost;
+}
+
+void grasp(Instance* inst) {
+	int start = rand() % inst->num_nodes;
+	int tour[inst->num_nodes];
+	double cost = 0.0;
+	while (!is_out_of_time(inst)){
+		cost = grasp_from(inst, tour, start, 5);
+	}
+	if (inst->two_opt) {
+		two_opt_from(inst, tour, &cost, false);
+	}
+	update_sol(inst, tour, cost);
 }
