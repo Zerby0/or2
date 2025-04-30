@@ -302,7 +302,16 @@ void grasp(Instance* inst) {
 	int tour[inst->num_nodes];
 	double cost = 0.0;
 	while (!is_out_of_time(inst)){
-		cost = grasp_from(inst, tour, start, 5);
+		cost = grasp_from(inst, tour, start, 2);
+		if (cost < inst->sol_cost) {
+			inst->sol_cost = cost;
+			memcpy(inst->sol, tour, inst->num_nodes * sizeof(int));
+		}
+		debug(40, "GRASP: found cost %f\n", cost);
+		if (inst->two_opt) {
+			two_opt_from(inst, tour, &cost, false);
+		}
+		update_sol(inst, tour, cost);
 	}
 	if (inst->two_opt) {
 		two_opt_from(inst, tour, &cost, false);
