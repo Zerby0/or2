@@ -241,7 +241,7 @@ void tabu_search(Instance* inst) {
 	free(move_history.buf);
 }
 
-double grasp_from(Instance* inst, int* tour, int start, int min_num_edges) {
+double grasp_from(Instance* inst, int* tour, int start, int min_num_edges, int prob_time) {
 	for(int i = 0; i < inst->num_nodes; i++) {
 		tour[i] = i;
 	}
@@ -274,16 +274,21 @@ double grasp_from(Instance* inst, int* tour, int start, int min_num_edges) {
 			prob[k] = (1.0 / heap[k].cost) / inv_sum;
 		}
 
-		double r = rand_double();
-		double cumulative = 0;
-		int selected = 0;
-		for (int k = 0; k < heap_size; k++) {
-			cumulative += prob[k];
-			if (r <= cumulative) {
-				selected = k;
-				break;
+		int selected;
+		if (rand() % prob_time == 0) {
+			double r = rand_double();
+			double cumulative = 0;
+			for (int k = 0; k < heap_size; k++) {
+				cumulative += prob[k];
+				if (r <= cumulative) {
+					selected = k;
+					break;
+				}
 			}
+		} else {
+			selected = heap_size - 1;
 		}
+
 
 		debug(80, "[%d] extending %d -> %d [%f]\n", i, tour[i], tour[heap[selected].node], heap[selected].cost);
 
@@ -297,12 +302,12 @@ double grasp_from(Instance* inst, int* tour, int start, int min_num_edges) {
 	return tot_cost;
 }
 
-void grasp_parameter(Instance* inst, int k) {
+void grasp_parameter(Instance* inst, int min_num_edges, int prob_time) {
 	int start = rand() % inst->num_nodes;
 	int tour[inst->num_nodes];
 	double cost = 0.0;
 	while (!is_out_of_time(inst)){
-		cost = grasp_from(inst, tour, start, k);
+		cost = grasp_from(inst, tour, start, min_num_edges, prob_time);
 		if (cost < inst->sol_cost) {
 			inst->sol_cost = cost;
 			memcpy(inst->sol, tour, inst->num_nodes * sizeof(int));
@@ -320,5 +325,5 @@ void grasp_parameter(Instance* inst, int k) {
 }
 
 void grasp(Instance* inst) {
-	grasp_parameter(inst, 2);
+	grasp_parameter(inst, 2, 10);
 }

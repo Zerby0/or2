@@ -101,7 +101,7 @@ void two_opt(Instance* inst);
 void variable_neigh_search(Instance* inst);
 void tabu_search(Instance* inst);
 void grasp(Instance* inst);
-void grasp_parameter(Instance* inst, int k);
+void grasp_parameter(Instance* inst, int k, int t);
 void benders_method(Instance* inst);
 void branch_and_cut(Instance* inst);
 
