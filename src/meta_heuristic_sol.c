@@ -241,19 +241,18 @@ void tabu_search(Instance* inst) {
 	free(move_history.buf);
 }
 
-double grasp_from(Instance* inst, int* tour, int start, int min_num_edges, int prob_time) {
+double grasp_iteration(Instance* inst, int* tour, int start, int max_num_edges, int prob_time) {
 	for(int i = 0; i < inst->num_nodes; i++) {
 		tour[i] = i;
 	}
 	swap(tour, 0, start);
-	if(min_num_edges < 2) {
-		printf("min_num_edges < 2 so becomes 2\n");
-		min_num_edges = 2;
+	if(max_num_edges < 2) {
+		max_num_edges = 2;
 	}
-	double prob[min_num_edges];
+	double prob[max_num_edges];
 	double tot_cost = 0;
 	for (int i = 0; i < inst->num_nodes - 1; i++) {
-		Edge heap[min_num_edges];
+		Edge heap[max_num_edges];
 		int heap_size = 0;
 		
 		//fill the heap with k minimum edges
@@ -261,7 +260,7 @@ double grasp_from(Instance* inst, int* tour, int start, int min_num_edges, int p
 			int candidate_node = tour[j];
 			double cost = get_cost(inst, tour[i], candidate_node);
 			Edge e = { .node = j, .cost = cost };
-			insert_edge(heap, &heap_size, min_num_edges, e);
+			insert_edge(heap, &heap_size, max_num_edges, e);
 		}
 
 		//calculate the probability of each edge
@@ -289,7 +288,6 @@ double grasp_from(Instance* inst, int* tour, int start, int min_num_edges, int p
 			selected = heap_size - 1;
 		}
 
-
 		debug(80, "[%d] extending %d -> %d [%f]\n", i, tour[i], tour[heap[selected].node], heap[selected].cost);
 
 		swap(tour, i + 1, heap[selected].node);
@@ -302,26 +300,19 @@ double grasp_from(Instance* inst, int* tour, int start, int min_num_edges, int p
 	return tot_cost;
 }
 
-void grasp_parameter(Instance* inst, int min_num_edges, int prob_time) {
-	int start = rand() % inst->num_nodes;
-	int tour[inst->num_nodes];
-	double cost = 0.0;
-	while (!is_out_of_time(inst)){
-		cost = grasp_from(inst, tour, start, min_num_edges, prob_time);
-		if (cost < inst->sol_cost) {
-			inst->sol_cost = cost;
-			memcpy(inst->sol, tour, inst->num_nodes * sizeof(int));
-		}
-		debug(40, "GRASP: found cost %f\n", cost);
+void grasp_parameter(Instance* inst, int max_num_edges, int prob_time) {
+	int iter_count = 0;
+	for (; !is_out_of_time(inst); iter_count++) {
+		int tour[inst->num_nodes];
+		int start = rand() % inst->num_nodes;
+		double cost = grasp_iteration(inst, tour, start, max_num_edges, prob_time);
 		if (inst->two_opt) {
-			two_opt_from(inst, tour, &cost, false);
+			two_opt_from(inst, tour, &cost, true);
 		}
+		debug(40, "GRASP: iteration %d found cost %f\n", iter_count, cost);
 		update_sol(inst, tour, cost);
 	}
-	if (inst->two_opt) {
-		two_opt_from(inst, tour, &cost, false);
-	}
-	update_sol(inst, tour, cost);
+	debug(30, "GRASP: ran for %d iterations\n", iter_count);
 }
 
 void grasp(Instance* inst) {
