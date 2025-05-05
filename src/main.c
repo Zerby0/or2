@@ -23,6 +23,7 @@ int parse_arguments(int argc, char *argv[], Instance *inst) {
 	inst->solver = "basic";
 	inst->bc_posting = true;
 	inst->bc_fcuts = true;
+	inst->bc_warm = true;
 	
     for (int i = 1; i < argc; i++) {
 		if (0);
@@ -47,6 +48,7 @@ int parse_arguments(int argc, char *argv[], Instance *inst) {
 		_args("--write-prob", write_prob);
 		_argnb("--no-posting", bc_posting);
 		_argnb("--no-fcuts", bc_fcuts);
+		_argnb("--no-warm", bc_warm);
 		else {
 			fprintf(stderr, "Unknown option: %s\n", argv[i]);
 			return -1;

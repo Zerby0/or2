@@ -31,6 +31,7 @@ typedef struct {
 	char* write_prob;  // write the CPLEX problem to a file
 	bool bc_posting;   // do solution posting during B&C using heuristics
 	bool bc_fcuts;     // apply fractional cuts during B&C
+	bool bc_warm;      // warm start the B&C with an heuristic solution
 	// input data
     int num_nodes;     // Number of nodes
 	int num_cols;      // Number of columns in the MIP problem

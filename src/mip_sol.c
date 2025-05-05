@@ -502,6 +502,26 @@ static int cplex_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void
 	return 0;
 }
 
+void warm_start(Instance* inst, CPXENVptr env, CPXLPptr lp) {
+	if (!inst->bc_warm) return;
+	if (inst->sol_cost == INF_COST) {
+		double start = get_time();
+		nearest_neighbor(inst);
+		two_opt(inst);
+		double elapsed = get_time() - start;
+		debug(30, "No solution yet, using NN+2opt for a warm start took %f seconds\n", elapsed);
+	}
+	debug(30, "Adding a warm start with cost %f\n", inst->sol_cost);
+	int ncols = inst->num_cols;
+	int ind[ncols];
+	double x[ncols];
+	tour_to_cplex(inst, inst->sol, ind, x);
+	int error;
+	int beg = 0;
+	int effortlevel = CPX_MIPSTART_NOCHECK;
+	_c(CPXaddmipstarts(env, lp, 1, ncols, &beg, ind, x, &effortlevel, NULL));
+}
+
 void open_cplex(const Instance* inst, CPXENVptr* env, CPXLPptr* lp) {
 	int error = 0;
 	int n = inst->num_nodes;
@@ -620,6 +640,7 @@ void branch_and_cut(Instance* inst) {
 	if (inst->bc_fcuts) contextid |= CPX_CALLBACKCONTEXT_RELAXATION;
 	_c(CPXcallbacksetfunc(env, lp, contextid, cplex_callback, inst));
 
+	warm_start(inst, env, lp);
 	double start = get_time();
 	_c(CPXmipopt(env, lp));
 	double elapsed = get_time() - start;
