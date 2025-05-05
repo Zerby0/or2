@@ -183,9 +183,9 @@ void tabu_search_iteration(Instance* inst, double min_factor, double max_factor,
 	inst_init_plot(inst);
 
     // the main parameter of tabue searh is the tenure -> size of the tabu list
-    double tenure_min = max(n * min_factor, 2.0);  //TODO: tuning parameter 16.0
-    double tenure_max = max(n * max_factor, 10.0);	 //TODO: tuning parameter 4.0
-    double tenure_frequency = freq;			 //TODO: tuning parameter 200
+    double tenure_min = max(n * min_factor, 2.0);
+    double tenure_max = max(n * max_factor, 10.0);
+    double tenure_frequency = freq;
 	debug(40, "Tabu parameters: %f -> %f, freq = %f\n", tenure_min, tenure_max, tenure_frequency);
 	assert(tenure_min <= tenure_max);
     
@@ -246,7 +246,7 @@ void tabu_search_iteration(Instance* inst, double min_factor, double max_factor,
 }
 
 void tabu_search(Instance* inst) {
-	tabu_search_iteration(inst, 16.0, 4.0, 200);
+	tabu_search_iteration(inst, 1./16, 1./4, 200);
 }
 
 double grasp_iteration(Instance* inst, int* tour, int start, int max_num_edges, int prob_time) {
