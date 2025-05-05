@@ -17,7 +17,7 @@ static void solve(Instance* inst, bool is_last, char* solver, bool two_opt) {
 void run_perf_profile(Instance* inst) {
 	debug(10, "Running performance profile\n");
 	init_instance_data(inst);
-	printf("7, nearest_neighbor, nearest_neighbor_two_opt, nearest_neighbor_all_starts, nearest_neighbor_all_starts_two_opt, extra_milage, extra_milage_two_opt, variable_neigh_search, tabu_search\n"); 
+	printf("10, nearest_neighbor, nearest_neighbor_two_opt, nearest_neighbor_all_starts, nearest_neighbor_all_starts_two_opt, extra_milage, extra_milage_two_opt, variable_neigh_search, tabu_search, grasp, grasp_two_opt\n"); 
 	int base_seed = inst->seed;
 	for(int i = base_seed; i < base_seed + 10; i++) {
 		debug(15, "Running with seed %d\n", i);
@@ -32,7 +32,9 @@ void run_perf_profile(Instance* inst) {
 		solve(inst, 0, "em",   0);
 		solve(inst, 0, "em",   1);
 		solve(inst, 0, "vns",  0);
-		solve(inst, 1, "tabu", 0);
+		solve(inst, 0, "tabu", 0);
+		solve(inst, 0, "grasp", 0);
+		solve(inst, 1, "grasp", 1);
 
 		printf("\n");
 	}
@@ -73,14 +75,88 @@ void perf_profile_tuning_grasp(Instance* inst) {
 		solve_grasp(inst, 4, 20, 0);
 		solve_grasp(inst, 5, 20, 1);
 		
+		printf("\n");
+	}
+	free_instance_data(inst);
+}
 
+void solve_tabu(Instance* inst, double min_div, double max_div, double freq, bool is_last){
+	inst->sol_cost = INF_COST;
+	inst->start_time = get_time();
+	tabu_search_iteration(inst, min_div, max_div, freq);
+	double took = get_time() - inst->start_time;
+	debug(20, "Solver: tabu_%f_%f_%f, Time: %fs, Cost: %f\n", min_div, max_div, freq, took, inst->sol_cost);
+	printf("%f", inst->sol_cost);
+	if (!is_last) printf(", ");
+}
+
+void perf_profile_tuning_tabu(Instance* inst) {
+	debug(10, "Running performance profile tuning\n");
+	init_instance_data(inst);
+	printf("10, ts_0.1_0.4_150, ts_0.2_0.6_200, ts_0.05_0.2_100, ts_0.1_0.4_50, ts_0.15_0.5_120, ts_0.08_0.3_180, ts_0.12_0.35_90, ts_0.2_0.5_160, ts_0.05_0.25_140, ts_0.1_0.45_200\n");
+	int base_seed = inst->seed;
+	for(int i = base_seed; i < base_seed + 10; i++) {
+		debug(15, "Running with seed %d\n", i);
+		inst->seed = i;
+		random_inst_data(inst);
+		printf("Instance_%d, ", i-base_seed);
+
+		solve_tabu(inst, 0.1, 0.4, 150, 0);
+		solve_tabu(inst, 0.2, 0.6, 200, 0);
+		solve_tabu(inst, 0.05, 0.2, 100, 0);
+		solve_tabu(inst, 0.1, 0.4, 50, 0);
+		solve_tabu(inst, 0.15, 0.5, 120, 0);
+		solve_tabu(inst, 0.08, 0.3, 180, 0);
+		solve_tabu(inst, 0.12, 0.35, 90, 0);
+		solve_tabu(inst, 0.2, 0.5, 160, 0);
+		solve_tabu(inst, 0.05, 0.25, 140, 0);
+		solve_tabu(inst, 0.1, 0.45, 200, 1);
+
+		
+		printf("\n");
+	}
+	free_instance_data(inst);
+}
+
+void solve_vns(Instance* inst, int k, bool is_last){
+	inst->sol_cost = INF_COST;
+	inst->start_time = get_time();
+	variable_neigh_search_iteration(inst, k);
+	double took = get_time() - inst->start_time;
+	debug(20, "Solver: vns_%d, Time: %fs, Cost: %f\n", k, took, inst->sol_cost);
+	printf("%f", inst->sol_cost);
+	if (!is_last) printf(", ");
+}
+void perf_profile_tuning_vns(Instance* inst) {
+	debug(10, "Running performance profile tuning\n");
+	init_instance_data(inst);
+	printf("10, vns_1, vns_2, vns_3, vns_4, vns_5, vns_6, vns_7, vns_8, vns_9, vns_10\n");
+	int base_seed = inst->seed;
+	for(int i = base_seed; i < base_seed + 10; i++) {
+		debug(15, "Running with seed %d\n", i);
+		inst->seed = i;
+		random_inst_data(inst);
+		printf("Instance_%d, ", i-base_seed);
+
+		solve_vns(inst, 1, 0);
+		solve_vns(inst, 2, 0);
+		solve_vns(inst, 3, 0);
+		solve_vns(inst, 4, 0);
+		solve_vns(inst, 5, 0);
+		solve_vns(inst, 6, 0);
+		solve_vns(inst, 7, 0);
+		solve_vns(inst, 8, 0);
+		solve_vns(inst, 9, 0);
+		solve_vns(inst, 10, 1);
+
+		
 		printf("\n");
 	}
 	free_instance_data(inst);
 }
 
 void run_perf_profile_tuning(Instance* inst){
-	//perf_profile_tuning_vns(inst);
-	//perf_profile_tuning_tabu(inst);
+	perf_profile_tuning_vns(inst);
+	perf_profile_tuning_tabu(inst);
 	perf_profile_tuning_grasp(inst);
 }

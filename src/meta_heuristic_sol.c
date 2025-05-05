@@ -64,7 +64,7 @@ void random_3opt(const Instance* inst, int* tour, double* cost) {
     *cost = compute_tour_cost(inst, tour);
 }
 
-void variable_neigh_search(Instance* inst) {
+void variable_neigh_search_iteration(Instance* inst, int k) {
 	if (inst->time_limit <= 0) {
 		debug(5, "WARNING: VNS called without time limit\n");
 	}
@@ -77,8 +77,8 @@ void variable_neigh_search(Instance* inst) {
 	double cost = inst->sol_cost;
 	inst_init_plot(inst);
 	int iter = 1, num_3opts = 0;
-	const int MIN_K = 1, MAX_K = 5;
-	int k = MIN_K;
+	//const int MIN_K = 1, MAX_K = 5;
+	//int k = MIN_K;
 	double prev_cost = cost;
 	while(!is_out_of_time(inst)) {
 		// make a kick
@@ -94,19 +94,23 @@ void variable_neigh_search(Instance* inst) {
 		}
 		update_sol(inst, tour, cost);
 
-		// update k
+		/*// update k
 		if (cost < prev_cost - EPS_COST) {
 			k = MIN_K;
 		} else if (cost > prev_cost + EPS_COST) {
 			k = max(MIN_K, MIN_K + (k - MIN_K) / 2);
 		} else {
 			k = min(MAX_K, k + 1);
-		}
+		}*/
 
 		debug(60, "VNS iteration %d, cost = %f -> %f, k = %d\n", iter, prev_cost, cost, k);
 		prev_cost = cost;
 	}
 	debug(40, "VNS: ran for %d iterations, did %d kicks, final cost: %f\n", iter, num_3opts, cost);
+}
+
+void variable_neigh_search(Instance* inst) {
+	variable_neigh_search_iteration(inst, 1);
 }
 
 // hash functions and comparison functions for cuckoo hash
@@ -167,7 +171,7 @@ void best_non_tabu(const Instance* inst, const int* tour, CuckooHash* tabu_list,
 	}
 }
 
-void tabu_search(Instance* inst) {
+void tabu_search_iteration(Instance* inst, double min_factor, double max_factor, double freq) {
     int n = inst->num_nodes;
 	if (inst->time_limit <= 0) {
 		debug(5, "WARNING: TABU called without time limit\n");
@@ -179,9 +183,9 @@ void tabu_search(Instance* inst) {
 	inst_init_plot(inst);
 
     // the main parameter of tabue searh is the tenure -> size of the tabu list
-    double tenure_min = max(n / 16.0, 2.0);
-    double tenure_max = max(n / 4.0, 10.0);
-    double tenure_frequency = 200;
+    double tenure_min = max(n * min_factor, 2.0);  //TODO: tuning parameter 16.0
+    double tenure_max = max(n * max_factor, 10.0);	 //TODO: tuning parameter 4.0
+    double tenure_frequency = freq;			 //TODO: tuning parameter 200
 	debug(40, "Tabu parameters: %f -> %f, freq = %f\n", tenure_min, tenure_max, tenure_frequency);
 	assert(tenure_min <= tenure_max);
     
@@ -239,6 +243,10 @@ void tabu_search(Instance* inst) {
     
     cuckoo_free(&tabu_list);
 	free(move_history.buf);
+}
+
+void tabu_search(Instance* inst) {
+	tabu_search_iteration(inst, 16.0, 4.0, 200);
 }
 
 double grasp_iteration(Instance* inst, int* tour, int start, int max_num_edges, int prob_time) {
