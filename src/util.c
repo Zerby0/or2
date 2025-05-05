@@ -61,9 +61,8 @@ void random_points(Instance* inst) {
     
     for (int i = 0; i < inst->num_nodes; i++) {
 		inst->x_coords[i] = (double)rand() / RAND_MAX * 1000;
-		debug(40, "number on %d coord x is %f\n", i, inst->x_coords[i]);
 		inst->y_coords[i] = (double)rand() / RAND_MAX * 1000;
-		debug(40, "number on %d coord y is %f\n", i, inst->y_coords[i]);
+		debug(95, "number on %d coord xy is %f, %f\n", i, inst->x_coords[i], inst->y_coords[i]);
     }
 }
 

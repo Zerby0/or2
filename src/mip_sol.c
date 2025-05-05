@@ -6,6 +6,7 @@
 
 #include <ilcplex/cplex.h>
 #include <mincut.h>
+#include <stdlib.h>
 
 typedef struct {
 	int* succ;   // successor in the cycle
@@ -452,7 +453,7 @@ int flow_callback(double cut_value, int compsize, int* comp, void* handle) {
 	void** handle_arr = (void**) handle;
 	const Instance* inst = (const Instance*) handle_arr[0];
 	SecData* s = (SecData*) handle_arr[1];
-	debug(90, "Flow algo found a cut with value %f, size %d\n", cut_value, compsize);
+	debug(85, "Flow algo found a cut with value %f, size %d\n", cut_value, compsize);
 	add_sec_for_component(inst, s, compsize, comp);
 	return 0;
 }
@@ -461,7 +462,11 @@ void relaxation_callback(Instance* inst, CPXCALLBACKCONTEXTptr context) {
 	int error;
 	int depth;
 	_c(CPXcallbackgetinfoint(context, CPXCALLBACKINFO_NODEDEPTH, &depth));
-	if (depth != 0) return; // only run on root node
+	bool is_root = depth == 0;
+	if (!is_root) { // alwyas separate at root
+		if ((double) rand() / RAND_MAX > inst->bc_theta) // separate at non-root nodes with probability theta
+			return;
+	}
 
 	double start = get_time();
 	int n = inst->num_nodes, ncols = inst->num_cols;
@@ -474,7 +479,7 @@ void relaxation_callback(Instance* inst, CPXCALLBACKCONTEXTptr context) {
 	int ncomp;
 	int* compscount = NULL, *comps = NULL;
 	_c(CCcut_connect_components(n, ecount, elist, ecost, &ncomp, &compscount, &comps));
-	debug(90, "Residual graph has %d/%d edges, %d components\n", ecount, ncols, ncomp);
+	debug(80, "Residual graph has %d/%d edges, %d components\n", ecount, ncols, ncomp);
 	SecData s;
 	sec_alloc(inst, &s);
 	if (ncomp > 1) { // more then one compoenent: add a SEC for each component
@@ -485,7 +490,8 @@ void relaxation_callback(Instance* inst, CPXCALLBACKCONTEXTptr context) {
 		}
 	} else { // only one component: run flow algo to find violated cuts
 		void* handle[2] = { inst, &s };
-		_c(CCcut_violated_cuts(n, ecount, elist, ecost, 1.9, flow_callback, handle));
+		double t = is_root ? 1.9 : 1.7;
+		_c(CCcut_violated_cuts(n, ecount, elist, ecost, t, flow_callback, handle));
 	}
 	_c(CPXcallbackaddusercuts(context, s.rcnt, s.nzcnt, s.rhs, s.sense, s.rmatbeg, s.rmatind, s.rmatval, s.purgeable, s.local));
 	sec_free(inst, &s);

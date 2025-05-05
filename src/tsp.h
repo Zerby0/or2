@@ -32,6 +32,7 @@ typedef struct {
 	bool bc_posting;   // do solution posting during B&C using heuristics
 	bool bc_fcuts;     // apply fractional cuts during B&C
 	bool bc_warm;      // warm start the B&C with an heuristic solution
+	double bc_theta;   // B&C: fraction of non-root nodes at which we separate fractional cuts
 	// input data
     int num_nodes;     // Number of nodes
 	int num_cols;      // Number of columns in the MIP problem

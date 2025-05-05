@@ -24,6 +24,7 @@ int parse_arguments(int argc, char *argv[], Instance *inst) {
 	inst->bc_posting = true;
 	inst->bc_fcuts = true;
 	inst->bc_warm = true;
+	inst->bc_theta = 0.1;
 	
     for (int i = 1; i < argc; i++) {
 		if (0);
@@ -49,6 +50,7 @@ int parse_arguments(int argc, char *argv[], Instance *inst) {
 		_argnb("--no-posting", bc_posting);
 		_argnb("--no-fcuts", bc_fcuts);
 		_argnb("--no-warm", bc_warm);
+		_argf("--theta", bc_theta);
 		else {
 			fprintf(stderr, "Unknown option: %s\n", argv[i]);
 			return -1;
