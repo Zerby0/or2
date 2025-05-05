@@ -13,4 +13,8 @@ mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=Release -DCPLEX_ROOT_DIR=/pa
 
 ## Performance Profile 
 
+Run performance profile on a .csv file 
+
+```
 python src/perfprof.py -D , -T 3600 -S 2 -M 20 perf_prof.csv pp.pdf -P “Name_Graph” -X "ratio"
+```
