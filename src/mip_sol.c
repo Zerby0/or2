@@ -15,6 +15,7 @@ typedef struct {
 } Cycles;
 
 typedef struct {
+	int maxrows, maxcols;
 	int rcnt, nzcnt;
 	double *rhs;
 	char *sense;
@@ -148,19 +149,19 @@ void find_cycles(const Instance *inst, const double *xstar, Cycles* cycles) {
 }
 
 void sec_alloc(const Instance* inst, SecData* s) {
-	int maxrows = inst->num_nodes;
-	int cols = inst->num_cols;
+	s->maxrows = inst->num_nodes;
+	s->maxcols = 2 * inst->num_cols; // sometimes fractional cuts produce more addends then `ncols`
 	s->rcnt = s->nzcnt = 0;
-	s->rmatbeg = malloc(maxrows * sizeof(int));
-	s->rmatind = malloc(cols * sizeof(int));
-	s->rmatval = malloc(cols * sizeof(double));
-	s->rhs = malloc(maxrows * sizeof(double));
-	s->sense = malloc(maxrows * sizeof(char));
-	s->purgeable = malloc(maxrows * sizeof(char));
-	s->local = malloc(maxrows * sizeof(char));
+	s->rmatbeg = malloc(s->maxrows * sizeof(int));
+	s->rmatind = malloc(s->maxcols * sizeof(int));
+	s->rmatval = malloc(s->maxcols * sizeof(double));
+	s->rhs = malloc(s->maxrows * sizeof(double));
+	s->sense = malloc(s->maxrows * sizeof(char));
+	s->purgeable = malloc(s->maxrows * sizeof(char));
+	s->local = malloc(s->maxrows * sizeof(char));
 	if (inst->write_prob) {
-		s->rowname = malloc(maxrows * sizeof(char*));
-		for (int i = 0; i < maxrows; i++) {
+		s->rowname = malloc(s->maxrows * sizeof(char*));
+		for (int i = 0; i < s->maxrows; i++) {
 			s->rowname[i] = malloc(64 * sizeof(char));
 		}
 	} else {
@@ -378,25 +379,29 @@ void callback_posting(Instance* inst, CPXCALLBACKCONTEXTptr context, Cycles* cyc
 	if (!inst->bc_posting) return;
 	int n = inst->num_nodes, ncols = inst->num_cols;
 	double hc = patch_heuristic(inst, cycles);
-	int tour[n], ind[ncols];
+	int tour[n];
 	cycle_to_tour(inst, cycles, tour);
 	if (inst->two_opt) two_opt_from(inst, tour, &hc, false);
 	debug(60, "Posting heuristic solution with cost %f\n", hc);
-	double xheu[ncols];
+	int* ind = malloc(ncols * sizeof(int));
+	double* xheu = malloc(ncols * sizeof(double));
 	tour_to_cplex(inst, tour, ind, xheu);
 	int error;
 	_c(CPXcallbackpostheursoln(context, ncols, ind, xheu, hc, CPXCALLBACKSOLUTION_NOCHECK));
+	free(ind);
+	free(xheu);
 }
 
 void candidate_callback(Instance* inst, CPXCALLBACKCONTEXTptr context) {
 	int n = inst->num_nodes, ncols = inst->num_cols;
 	int error;
-	double xstar[ncols];
+	double* xstar = malloc(ncols * sizeof(double));
 	double objval;
 	_c(CPXcallbackgetcandidatepoint(context, xstar, 0, ncols - 1, &objval));
 	int succ[n], comp[n];
 	Cycles cycles = { succ, comp, -1 };
 	find_cycles(inst, xstar, &cycles);
+	free(xstar);
 	debug(90, "Found %d component(s) in callback\n", cycles.ncomp);
 	if (cycles.ncomp > 1) {
 		callback_sec(inst, context, &cycles);
@@ -422,12 +427,12 @@ int build_residual_graph(const Instance* inst, const double* xstar, int* elist, 
 void add_sec_for_component(const Instance* inst, SecData* s, int compcount, const int* comp) {
 	int n = inst->num_nodes;
 	int row = s->rcnt;
-	if (row == n) {
+	if (row >= s->maxrows) {
 		debug(10, "SEC: too many rows\n");
 		return;
 	}
-	if (s->nzcnt + compcount * (compcount - 1) / 2 > inst->num_cols) {
-		debug(10, "SEC: too many addends\n");
+	if (s->nzcnt + compcount * (compcount - 1) / 2 > s->maxcols) {
+		debug(10, "SEC: too many addends (%d >= %d)\n", s->nzcnt + compcount * (compcount - 1) / 2, s->maxcols);
 		return;
 	}
 	s->rcnt++;
@@ -470,11 +475,11 @@ void relaxation_callback(Instance* inst, CPXCALLBACKCONTEXTptr context) {
 
 	double start = get_time();
 	int n = inst->num_nodes, ncols = inst->num_cols;
-	double xstar[ncols];
+	double* xstar = malloc(ncols * sizeof(double));
 	double objval;
 	_c(CPXcallbackgetrelaxationpoint(context, xstar, 0, ncols - 1, &objval));
-	int elist[2 * ncols];
-	double ecost[ncols];
+	int* elist = malloc(2 * ncols * sizeof(int));
+	double* ecost = malloc(ncols * sizeof(double));
 	int ecount = build_residual_graph(inst, xstar, elist, ecost);
 	int ncomp;
 	int* compscount = NULL, *comps = NULL;
@@ -498,6 +503,9 @@ void relaxation_callback(Instance* inst, CPXCALLBACKCONTEXTptr context) {
 	inst->time_fcuts += get_time() - start;
 	CC_IFFREE(compscount, int);
 	CC_IFFREE(comps, int);
+	free(elist);
+	free(ecost);
+	free(xstar);
 }
 
 static int cplex_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void *userhandle) {
@@ -519,13 +527,15 @@ void mip_warm_start(Instance* inst, CPXENVptr env, CPXLPptr lp) {
 	}
 	debug(30, "Adding a warm start with cost %f\n", inst->sol_cost);
 	int ncols = inst->num_cols;
-	int ind[ncols];
-	double x[ncols];
+	int* ind = malloc(ncols * sizeof(int));
+	double* x = malloc(ncols * sizeof(double));
 	tour_to_cplex(inst, inst->sol, ind, x);
 	int error;
 	int beg = 0;
 	int effortlevel = CPX_MIPSTART_NOCHECK;
 	_c(CPXaddmipstarts(env, lp, 1, ncols, &beg, ind, x, &effortlevel, NULL));
+	free(ind);
+	free(x);
 }
 
 void open_cplex(const Instance* inst, CPXENVptr* env, CPXLPptr* lp) {
@@ -579,7 +589,7 @@ void benders_method(Instance *inst) {
 
 	int num_cols = inst->num_cols = CPXgetnumcols(env, lp);
 	int iteration = 0;
-	double xstar[num_cols];
+	double* xstar = malloc(num_cols * sizeof(double));
 	inst_init_plot(inst);
 
 	int succ[n], comp[n];
@@ -638,6 +648,7 @@ void benders_method(Instance *inst) {
 	debug(20, "Benders required %d iterations\n", iteration);
 
 	close_cplex(&env, &lp);
+	free(xstar);
 }
 
 void branch_and_cut(Instance* inst) {
@@ -660,7 +671,7 @@ void branch_and_cut(Instance* inst) {
 	int status;
 	double cost;
 	int iteration = 0;
-	double xstar[num_cols];
+	double* xstar = malloc(num_cols * sizeof(double));
 	_c(CPXsolution(env, lp, &status, &cost, xstar, NULL, NULL, NULL));
 	if (status == CPXMIP_TIME_LIM_FEAS || status == CPXMIP_TIME_LIM_INFEAS) {
 		debug(10, "MIP optimization timed out, solution in not proven optimal\n");
@@ -675,4 +686,5 @@ void branch_and_cut(Instance* inst) {
 	update_candidate_sol(inst, &cycles, &cost);
 
 	close_cplex(&env, &lp);
+	free(xstar);
 }

@@ -243,7 +243,7 @@ void tabu_search_iteration(Instance* inst, double min_factor, double max_factor,
 		inst_plot_cost(inst, current_cost);
     }
 
-	debug(40, "TABU: ran for %d iterations, final cost: %f\n", iteration, current_cost);
+	debug(20, "TABU: ran for %d iterations, final cost: %f\n", iteration, current_cost);
     
     cuckoo_free(&tabu_list);
 	free(move_history.buf);

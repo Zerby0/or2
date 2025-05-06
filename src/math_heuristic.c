@@ -60,7 +60,7 @@ void fix_segment(const Instance* inst, double p, bool* fix) {
 // leave free a patch of edges close together in space around a center
 void fix_hole(const Instance* inst, double p, bool* fix) {
 	int n = inst->num_nodes;
-	memset(fix, 0xffffffff, n * sizeof(bool));
+	for (int i = 0; i < n; i++) fix[i] = true;
 	int center = rand() % n;
 	fix[center] = false;
 	int nfree = 1, want_free = n - round(n * p);
