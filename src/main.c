@@ -69,6 +69,7 @@ int solve_instance(Instance *inst) {
 	else if (strcmp(inst->solver, "grasp") == 0) grasp(inst);
 	else if (strcmp(inst->solver, "benders") == 0) benders_method(inst);
 	else if (strcmp(inst->solver, "bc") == 0) branch_and_cut(inst);
+	else if (strcmp(inst->solver, "hf") == 0) hard_fixing(inst);
 	else {
 		fprintf(stderr, "Unknown solver: %s\n", inst->solver);
 		return -1;

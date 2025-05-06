@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdbool.h>
+#include <ilcplex/cplex.h>
+
 #include "list.h"
 
 #ifndef TSP_H
@@ -81,6 +83,7 @@ int plot_partial_sol(const Instance* inst, const int* sol, int len);
 void plot_cost_iteration(const IterData* data, int len);
 void save_cost_to_file(const char* filename, int iteration, double cost);
 int plot_infeasible_solution(const Instance* inst, const double* xstar);
+void plot_solution_subset(const Instance* inst, const int* tour, const bool* subset);
 
 int init_instance_data(Instance* inst);
 void free_instance_data(Instance* inst);
@@ -108,9 +111,20 @@ void grasp(Instance* inst);
 void grasp_parameter(Instance* inst, int k, int t);
 void benders_method(Instance* inst);
 void branch_and_cut(Instance* inst);
+void hard_fixing(Instance* inst);
 
 void run_perf_profile(Instance* inst);
 void run_perf_profile_tuning(Instance* inst);
+
+
+// cplex stuff
+
+int xpos(const Instance *inst, int i, int j);
+void open_cplex(const Instance* inst, CPXENVptr* env, CPXLPptr* lp);
+void close_cplex(CPXENVptr* env, CPXLPptr* lp);
+void build_base_model(const Instance *inst, CPXENVptr env, CPXLPptr lp);
+void install_cplex_callbacks(Instance* inst, CPXENVptr env, CPXLPptr lp);
+void mip_warm_start(Instance* inst, CPXENVptr env, CPXLPptr lp);
 
 
 // utility macros

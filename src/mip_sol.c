@@ -508,9 +508,9 @@ static int cplex_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void
 	return 0;
 }
 
-void warm_start(Instance* inst, CPXENVptr env, CPXLPptr lp) {
-	if (!inst->bc_warm) return;
+void mip_warm_start(Instance* inst, CPXENVptr env, CPXLPptr lp) {
 	if (inst->sol_cost == INF_COST) {
+		if (!inst->bc_warm) return;
 		double start = get_time();
 		nearest_neighbor(inst);
 		two_opt(inst);
@@ -551,6 +551,14 @@ void open_cplex(const Instance* inst, CPXENVptr* env, CPXLPptr* lp) {
 	if (*lp == NULL) {
 		fatal_error("Failed to create CPLEX problem.\n");
 	}
+}
+
+void install_cplex_callbacks(Instance* inst, CPXENVptr env, CPXLPptr lp) {
+	int error;
+	CPXLONG contextid = CPX_CALLBACKCONTEXT_CANDIDATE;
+	if (inst->bc_fcuts) contextid |= CPX_CALLBACKCONTEXT_RELAXATION;
+	_c(CPXcallbacksetfunc(env, lp, contextid, cplex_callback, inst));
+
 }
 
 void close_cplex(CPXENVptr* env, CPXLPptr* lp) {
@@ -641,12 +649,9 @@ void branch_and_cut(Instance* inst) {
 
 	build_base_model(inst, env, lp);
 	int num_cols = inst->num_cols = CPXgetnumcols(env, lp);
-	
-	CPXLONG contextid = CPX_CALLBACKCONTEXT_CANDIDATE;
-	if (inst->bc_fcuts) contextid |= CPX_CALLBACKCONTEXT_RELAXATION;
-	_c(CPXcallbacksetfunc(env, lp, contextid, cplex_callback, inst));
+	install_cplex_callbacks(inst, env, lp);
 
-	warm_start(inst, env, lp);
+	mip_warm_start(inst, env, lp);
 	double start = get_time();
 	_c(CPXmipopt(env, lp));
 	double elapsed = get_time() - start;

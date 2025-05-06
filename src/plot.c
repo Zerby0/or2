@@ -158,3 +158,78 @@ int plot_infeasible_solution(const Instance* inst, const double* xstar) {
 
     return 0; 
 }
+
+void plot_solution_subset(const Instance* inst, const int* tour, const bool* subset) {
+    if (!inst || !tour || !subset) {
+        fprintf(stderr, "Error: Null pointer provided to plot_solution_subset.\n");
+        return;
+    }
+    if (inst->num_nodes <= 0) {
+        fprintf(stderr, "Error: Number of nodes must be positive.\n");
+        return;
+    }
+
+    double min_x = inst->x_coords[0], max_x = inst->x_coords[0];
+    double min_y = inst->y_coords[0], max_y = inst->y_coords[0];
+    for (int i = 1; i < inst->num_nodes; i++) {
+        min_x = fmin(min_x, inst->x_coords[i]);
+        max_x = fmax(max_x, inst->x_coords[i]);
+        min_y = fmin(min_y, inst->y_coords[i]);
+        max_y = fmax(max_y, inst->y_coords[i]);
+    }
+
+    FILE* pipe = popen("gnuplot", "w");
+    if (!pipe) {
+        perror("Error opening pipe to gnuplot");
+        return;
+    }
+
+    fprintf(pipe, "set title 'Solution Subset Plot'\n");
+    fprintf(pipe, "set xlabel 'X'\n");
+    fprintf(pipe, "set ylabel 'Y'\n");
+    fprintf(pipe, "set grid\n");
+    double gap = (max_x - min_x + max_y - min_y) * 0.02; // Small padding for aesthetics
+    fprintf(pipe, "set xrange [%f:%f]\n", min_x - gap, max_x + gap);
+    fprintf(pipe, "set yrange [%f:%f]\n", min_y - gap, max_y + gap);
+
+    // Plot command: 1. Nodes (blue), 2. Normal Edges (red), 3. Subset Edges (green)
+    fprintf(pipe, "plot '-' with points pointtype 7 pointsize 1.5 lc rgb 'blue' title 'Nodes', \\\n");
+    fprintf(pipe, "     '-' with lines lc rgb 'red' title 'Free Edges', \\\n");
+    fprintf(pipe, "     '-' with lines lc rgb 'dark-green' title 'Fixed Edges'\n");
+
+    // Data for Nodes (blue)
+    for (int i = 0; i < inst->num_nodes; i++) {
+        fprintf(pipe, "%f %f\n", inst->x_coords[i], inst->y_coords[i]);
+    }
+    fprintf(pipe, "e\n");
+
+    // Data for Normal Edges (red)
+    for (int i = 0; i < inst->num_nodes; i++) {
+        if (!subset[i]) {
+            int u = tour[i];
+            int v = tour[(i + 1) % inst->num_nodes];
+            fprintf(pipe, "%f %f\n", inst->x_coords[u], inst->y_coords[u]);
+            fprintf(pipe, "%f %f\n", inst->x_coords[v], inst->y_coords[v]);
+            fprintf(pipe, "\n"); // Separate segments for gnuplot
+        }
+    }
+    fprintf(pipe, "e\n");
+
+    // Data for Subset Edges (green)
+    for (int i = 0; i < inst->num_nodes; i++) {
+        if (subset[i]) {
+            int u = tour[i];
+            int v = tour[(i + 1) % inst->num_nodes];
+            fprintf(pipe, "%f %f\n", inst->x_coords[u], inst->y_coords[u]);
+            fprintf(pipe, "%f %f\n", inst->x_coords[v], inst->y_coords[v]);
+            fprintf(pipe, "\n"); // Separate segments for gnuplot
+        }
+    }
+    fprintf(pipe, "e\n");
+
+    fprintf(pipe, "pause mouse keypress 'Close window or press any key to exit plot...'\n");
+    fflush(pipe);
+    if (pclose(pipe) == -1) {
+        perror("Error closing gnuplot pipe");
+    }
+}
