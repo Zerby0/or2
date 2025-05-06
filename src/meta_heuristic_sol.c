@@ -64,7 +64,7 @@ void random_3opt(const Instance* inst, int* tour, double* cost) {
     *cost = compute_tour_cost(inst, tour);
 }
 
-void variable_neigh_search_iteration(Instance* inst, int k) {
+void variable_neigh_search_iteration(Instance* inst, int k, bool incremental) {
 	if (inst->time_limit <= 0) {
 		debug(5, "WARNING: VNS called without time limit\n");
 	}
@@ -77,8 +77,10 @@ void variable_neigh_search_iteration(Instance* inst, int k) {
 	double cost = inst->sol_cost;
 	inst_init_plot(inst);
 	int iter = 1, num_3opts = 0;
-	//const int MIN_K = 1, MAX_K = 5;
-	//int k = MIN_K;
+	const int MIN_K = 1, MAX_K = 5;
+	if (incremental) {
+		k = MIN_K;
+	}
 	double prev_cost = cost;
 	while(!is_out_of_time(inst)) {
 		// make a kick
@@ -94,14 +96,16 @@ void variable_neigh_search_iteration(Instance* inst, int k) {
 		}
 		update_sol(inst, tour, cost);
 
-		/*// update k
-		if (cost < prev_cost - EPS_COST) {
-			k = MIN_K;
-		} else if (cost > prev_cost + EPS_COST) {
-			k = max(MIN_K, MIN_K + (k - MIN_K) / 2);
-		} else {
-			k = min(MAX_K, k + 1);
-		}*/
+		if (incremental) {
+			// update k
+			if (cost < prev_cost - EPS_COST) {
+				k = MIN_K;
+			} else if (cost > prev_cost + EPS_COST) {
+				k = min(MAX_K, k + 1);
+			} else {
+				k = max(MIN_K, k - 1);
+			}
+		} 
 
 		debug(60, "VNS iteration %d, cost = %f -> %f, k = %d\n", iter, prev_cost, cost, k);
 		prev_cost = cost;
@@ -110,7 +114,7 @@ void variable_neigh_search_iteration(Instance* inst, int k) {
 }
 
 void variable_neigh_search(Instance* inst) {
-	variable_neigh_search_iteration(inst, 1);
+	variable_neigh_search_iteration(inst, 1, true);
 }
 
 // hash functions and comparison functions for cuckoo hash

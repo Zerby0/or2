@@ -101,7 +101,7 @@ bool two_opt_once(const Instance* inst, int* tour, double* cost);
 void two_opt_from(Instance* inst, int* tour, double* cost, bool check_time);
 void two_opt(Instance* inst);
 void variable_neigh_search(Instance* inst);
-void variable_neigh_search_iteration(Instance* inst, int k);
+void variable_neigh_search_iteration(Instance* inst, int k, bool incremental);
 void tabu_search(Instance* inst);
 void tabu_search_iteration(Instance* inst, double min_factor, double max_factor, double freq);
 void grasp(Instance* inst);

@@ -118,10 +118,10 @@ void perf_profile_tuning_tabu(Instance* inst) {
 	free_instance_data(inst);
 }
 
-void solve_vns(Instance* inst, int k, bool is_last){
+void solve_vns(Instance* inst, int k, bool incremental, bool is_last){
 	inst->sol_cost = INF_COST;
 	inst->start_time = get_time();
-	variable_neigh_search_iteration(inst, k);
+	variable_neigh_search_iteration(inst, k, incremental);
 	double took = get_time() - inst->start_time;
 	debug(20, "Solver: vns_%d, Time: %fs, Cost: %f\n", k, took, inst->sol_cost);
 	printf("%f", inst->sol_cost);
@@ -130,7 +130,7 @@ void solve_vns(Instance* inst, int k, bool is_last){
 void perf_profile_tuning_vns(Instance* inst) {
 	debug(10, "Running performance profile tuning\n");
 	init_instance_data(inst);
-	printf("10, vns_1, vns_2, vns_3, vns_4, vns_5, vns_6, vns_7, vns_8, vns_9, vns_10\n");
+	printf("10, vns_1, vns_2, vns_3, vns_4, vns_5, vns_6, vns_7, vns_8, vns_9, vns_incr\n");
 	int base_seed = inst->seed;
 	for(int i = base_seed; i < base_seed + 10; i++) {
 		debug(15, "Running with seed %d\n", i);
@@ -138,16 +138,16 @@ void perf_profile_tuning_vns(Instance* inst) {
 		random_inst_data(inst);
 		printf("Instance_%d, ", i-base_seed);
 
-		solve_vns(inst, 1, 0);
-		solve_vns(inst, 2, 0);
-		solve_vns(inst, 3, 0);
-		solve_vns(inst, 4, 0);
-		solve_vns(inst, 5, 0);
-		solve_vns(inst, 6, 0);
-		solve_vns(inst, 7, 0);
-		solve_vns(inst, 8, 0);
-		solve_vns(inst, 9, 0);
-		solve_vns(inst, 10, 1);
+		solve_vns(inst, 1, 0, 0);
+		solve_vns(inst, 2, 0, 0);
+		solve_vns(inst, 3, 0, 0);
+		solve_vns(inst, 4, 0, 0);
+		solve_vns(inst, 5, 0, 0);
+		solve_vns(inst, 6, 0, 0);
+		solve_vns(inst, 7, 0, 0);
+		solve_vns(inst, 8, 0, 0);
+		solve_vns(inst, 9, 0, 0);
+		solve_vns(inst, 1, 1, 1);
 
 		
 		printf("\n");
