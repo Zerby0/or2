@@ -19,8 +19,19 @@ dashes = ['-',  # solid line
 	'-',
 	'--']
 
-markers = ['+', 'x', 's', '^', 'o', 'd', '*', 'v', '<', '>']
-colors = ['r', 'b', 'y', 'g', 'm', 'c', 'k', '#ff7f0e', '#2ca02c', '#d62728']
+markers = ['+', 'x', 's', '^', 'o', 'd', '*', 'v', '<', '>', '1', '2', '3', '4', 'p']
+colors = [
+    'r', 'b', 'y', 'g', 'm', 'c', 'k',
+    '#ff7f0e',  # orange
+    '#2ca02c',  # green
+    '#d62728',  # red
+    '#9467bd',  # purple
+    '#8c564b',  # brown
+    '#e377c2',  # pink
+    '#7f7f7f',  # gray
+    '#17becf'   # cyan
+]
+
 
 
 class CmdLineParser(object):
@@ -115,7 +126,7 @@ def main():
 			
     #TODO: make it work with different scales (1.4 works for cost ratios)
 
-	plt.axis([1, 1.25, 0, 1])
+	plt.axis([1, 1.05, 0, 1])
 	plt.legend(loc='lower right')
 	if opt.plottitle is not None:
 		plt.title(opt.plottitle)

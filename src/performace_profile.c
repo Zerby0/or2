@@ -156,7 +156,7 @@ void perf_profile_tuning_vns(Instance* inst) {
 }
 
 void run_perf_profile_tuning(Instance* inst){
-	perf_profile_tuning_vns(inst);
-	perf_profile_tuning_tabu(inst);
+	//perf_profile_tuning_vns(inst);
+	//perf_profile_tuning_tabu(inst);
 	perf_profile_tuning_grasp(inst);
 }
