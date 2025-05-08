@@ -44,7 +44,7 @@ void run_perf_profile(Instance* inst) {
 void solve_grasp(Instance* inst, int k, int t, bool is_last){
 	inst->sol_cost = INF_COST;
 	inst->start_time = get_time();
-	grasp_parameter(inst, k, t);
+	grasp_parametrized(inst, k, t);
 	double took = get_time() - inst->start_time;
 	debug(20, "Solver: grasp_%d, Time: %fs, Cost: %f\n", k, took, inst->sol_cost);
 	printf("%f", inst->sol_cost);
@@ -83,7 +83,7 @@ void perf_profile_tuning_grasp(Instance* inst) {
 void solve_tabu(Instance* inst, double min_div, double max_div, double freq, bool is_last){
 	inst->sol_cost = INF_COST;
 	inst->start_time = get_time();
-	tabu_search_iteration(inst, min_div, max_div, freq);
+	tabu_search_parametrized(inst, min_div, max_div, freq);
 	double took = get_time() - inst->start_time;
 	debug(20, "Solver: tabu_%f_%f_%f, Time: %fs, Cost: %f\n", min_div, max_div, freq, took, inst->sol_cost);
 	printf("%f", inst->sol_cost);
@@ -121,7 +121,7 @@ void perf_profile_tuning_tabu(Instance* inst) {
 void solve_vns(Instance* inst, int k, bool incremental, bool is_last){
 	inst->sol_cost = INF_COST;
 	inst->start_time = get_time();
-	variable_neigh_search_iteration(inst, k, incremental);
+	variable_neigh_search_parametrized(inst, k, incremental);
 	double took = get_time() - inst->start_time;
 	debug(20, "Solver: vns_%d, Time: %fs, Cost: %f\n", k, took, inst->sol_cost);
 	printf("%f", inst->sol_cost);

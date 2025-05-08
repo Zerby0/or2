@@ -64,7 +64,7 @@ void random_3opt(const Instance* inst, int* tour, double* cost) {
     *cost = compute_tour_cost(inst, tour);
 }
 
-void variable_neigh_search_iteration(Instance* inst, int k, bool incremental) {
+void variable_neigh_search_parametrized(Instance* inst, int k, bool incremental) {
 	if (inst->time_limit <= 0) {
 		debug(5, "WARNING: VNS called without time limit\n");
 	}
@@ -114,7 +114,7 @@ void variable_neigh_search_iteration(Instance* inst, int k, bool incremental) {
 }
 
 void variable_neigh_search(Instance* inst) {
-	variable_neigh_search_iteration(inst, 1, true);
+	variable_neigh_search_parametrized(inst, 1, true);
 }
 
 // hash functions and comparison functions for cuckoo hash
@@ -175,7 +175,7 @@ void best_non_tabu(const Instance* inst, const int* tour, CuckooHash* tabu_list,
 	}
 }
 
-void tabu_search_iteration(Instance* inst, double min_factor, double max_factor, double freq) {
+void tabu_search_parametrized(Instance* inst, double min_factor, double max_factor, double freq) {
     int n = inst->num_nodes;
 	if (inst->time_limit <= 0) {
 		debug(5, "WARNING: TABU called without time limit\n");
@@ -250,7 +250,7 @@ void tabu_search_iteration(Instance* inst, double min_factor, double max_factor,
 }
 
 void tabu_search(Instance* inst) {
-	tabu_search_iteration(inst, 1./16, 1./4, 200);
+	tabu_search_parametrized(inst, 1./16, 1./4, 200);
 }
 
 double grasp_iteration(Instance* inst, int* tour, int start, int max_num_edges, int prob_time) {
@@ -312,7 +312,7 @@ double grasp_iteration(Instance* inst, int* tour, int start, int max_num_edges, 
 	return tot_cost;
 }
 
-void grasp_parameter(Instance* inst, int max_num_edges, int prob_time) {
+void grasp_parametrized(Instance* inst, int max_num_edges, int prob_time) {
 	int iter_count = 0;
 	for (; !is_out_of_time(inst); iter_count++) {
 		int tour[inst->num_nodes];
@@ -328,5 +328,5 @@ void grasp_parameter(Instance* inst, int max_num_edges, int prob_time) {
 }
 
 void grasp(Instance* inst) {
-	grasp_parameter(inst, 2, 10);
+	grasp_parametrized(inst, 2, 10);
 }

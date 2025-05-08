@@ -104,14 +104,15 @@ bool two_opt_once(const Instance* inst, int* tour, double* cost);
 void two_opt_from(Instance* inst, int* tour, double* cost, bool check_time);
 void two_opt(Instance* inst);
 void variable_neigh_search(Instance* inst);
-void variable_neigh_search_iteration(Instance* inst, int k, bool incremental);
+void variable_neigh_search_parametrized(Instance* inst, int k, bool incremental);
 void tabu_search(Instance* inst);
-void tabu_search_iteration(Instance* inst, double min_factor, double max_factor, double freq);
+void tabu_search_parametrized(Instance* inst, double min_factor, double max_factor, double freq);
 void grasp(Instance* inst);
-void grasp_parameter(Instance* inst, int k, int t);
+void grasp_parametrized(Instance* inst, int k, int t);
 void benders_method(Instance* inst);
 void branch_and_cut(Instance* inst);
 void hard_fixing(Instance* inst);
+void hard_fixing_parametrized(Instance *inst, bool seqence_fixings, double p0, double p_decay);
 
 void run_perf_profile(Instance* inst);
 void run_perf_profile_tuning(Instance* inst);

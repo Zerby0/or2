@@ -81,7 +81,7 @@ void fix_hole(const Instance* inst, double p, bool* fix) {
 	}
 }
 
-void hard_fixing(Instance *inst) {
+void hard_fixing_parametrized(Instance *inst, bool seqence_fixings, double p0, double p_decay) {
 	if (inst->time_limit == 0) {
 		fatal_error("hard fixing called without a time limit");
 	}
@@ -106,7 +106,6 @@ void hard_fixing(Instance *inst) {
 	build_base_model(inst, env, lp);
 	int num_cols = inst->num_cols = CPXgetnumcols(env, lp);
 	install_cplex_callbacks(inst, env, lp);
-	_c(CPXsetintparam(env, CPX_PARAM_MIPEMPHASIS, CPX_MIPEMPHASIS_FEASIBILITY));
 	mip_warm_start(inst, env, lp); // will use the tabu search result
 
 	// hard fixing loop
@@ -114,7 +113,7 @@ void hard_fixing(Instance *inst) {
 	char* bound_t = malloc(num_cols * sizeof(char));
 	double* buf_d = malloc(num_cols * sizeof(double));
 	int iteration = 0;
-	double p = 0.75;
+	double p = p0;
 	while (!is_out_of_time(inst)) {
 		iteration++;
 
@@ -173,11 +172,11 @@ void hard_fixing(Instance *inst) {
 		debug(30, "iter = %d, \tp = %f, \ttime = %f%c, \tcost = %f%c\n", iteration, p, elapsed, timeout ? '*' : 's', cost, improved ? '*' : ' ');
 
 		// update p
-		p = p * 0.985;
-		if (improved) p = 1 - (1 - p) * 0.92;
-		else p *= 0.975;
-		if (timeout) p = 1 - (1 - p) * 0.95;
-		else p *= 0.995;
+		p = p * p_decay;
+		if (improved) p = 1 - (1 - p) * pow(p_decay, 5);
+		else p *= pow(p_decay, 1.5);
+		if (timeout) p = 1 - (1 - p) * pow(p_decay, 3);
+		else p *= pow(p_decay, 0.3);
 		p = clamp(p, 0.2, 0.9);
 	}
 
@@ -187,4 +186,8 @@ void hard_fixing(Instance *inst) {
 	free(bound_t);
 	free(buf_d);
 	close_cplex(&env, &lp);
+}
+
+void hard_fixing(Instance *inst) {
+	hard_fixing_parametrized(inst, true, 0.75, 0.985);
 }
