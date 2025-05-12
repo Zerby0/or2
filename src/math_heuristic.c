@@ -81,7 +81,12 @@ void fix_hole(const Instance* inst, double p, bool* fix) {
 	}
 }
 
-void hard_fixing_parametrized(Instance *inst, bool seqence_fixings, double p0, double p_decay) {
+/** sequence_fixings: if false only use independent fixings, otherwise also use segment and hole fixings
+  * p0: initial probability of fixing an edge
+  * p_decay: decay factor for the probability of fixing an edge
+  * iter_tl: time limit for each iteration of the fixing loop, realtive to totale time limit
+  */
+void hard_fixing_parametrized(Instance *inst, bool seqence_fixings, double p0, double p_decay, double iter_tl) {
 	if (inst->time_limit == 0) {
 		fatal_error("hard fixing called without a time limit");
 	}
@@ -145,7 +150,7 @@ void hard_fixing_parametrized(Instance *inst, bool seqence_fixings, double p0, d
 		_c(CPXchgbds(env, lp, num_cols, indicies, bound_t, bound_v));
 
 		// solve the problem
-		_c(CPXsetdblparam(env, CPX_PARAM_TILIM, min(inst->time_limit * 0.05, get_remaining_time(inst))));
+		_c(CPXsetdblparam(env, CPX_PARAM_TILIM, min(inst->time_limit * iter_tl, get_remaining_time(inst))));
 		double start = get_time();
 		_c(CPXmipopt(env, lp));
 		double elapsed = get_time() - start;
@@ -189,5 +194,5 @@ void hard_fixing_parametrized(Instance *inst, bool seqence_fixings, double p0, d
 }
 
 void hard_fixing(Instance *inst) {
-	hard_fixing_parametrized(inst, true, 0.75, 0.985);
+	hard_fixing_parametrized(inst, true, 0.75, 0.985, 0.05);
 }

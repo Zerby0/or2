@@ -112,7 +112,7 @@ void grasp_parametrized(Instance* inst, int k, int t);
 void benders_method(Instance* inst);
 void branch_and_cut(Instance* inst);
 void hard_fixing(Instance* inst);
-void hard_fixing_parametrized(Instance *inst, bool seqence_fixings, double p0, double p_decay);
+void hard_fixing_parametrized(Instance *inst, bool seqence_fixings, double p0, double p_decay, double iter_tl);
 
 void run_perf_profile(Instance* inst);
 void run_perf_profile_tuning(Instance* inst);
