@@ -41,7 +41,7 @@ void run_perf_profile(Instance* inst) {
 	free_instance_data(inst);
 }
 
-void solve_grasp(Instance* inst, int k, int t, bool is_last){
+static void solve_grasp(Instance* inst, int k, int t, bool is_last){
 	inst->sol_cost = INF_COST;
 	inst->start_time = get_time();
 	grasp_parametrized(inst, k, t);
@@ -80,7 +80,7 @@ void perf_profile_tuning_grasp(Instance* inst) {
 	free_instance_data(inst);
 }
 
-void solve_tabu(Instance* inst, double min_div, double max_div, double freq, bool is_last){
+static void solve_tabu(Instance* inst, double min_div, double max_div, double freq, bool is_last){
 	inst->sol_cost = INF_COST;
 	inst->start_time = get_time();
 	tabu_search_parametrized(inst, min_div, max_div, freq);
@@ -118,7 +118,7 @@ void perf_profile_tuning_tabu(Instance* inst) {
 	free_instance_data(inst);
 }
 
-void solve_vns(Instance* inst, int k, bool incremental, bool is_last){
+static void solve_vns(Instance* inst, int k, bool incremental, bool is_last){
 	inst->sol_cost = INF_COST;
 	inst->start_time = get_time();
 	variable_neigh_search_parametrized(inst, k, incremental);
@@ -155,7 +155,7 @@ void perf_profile_tuning_vns(Instance* inst) {
 	free_instance_data(inst);
 }
 
-void solve_hard_fixing(Instance* inst, bool seqence_fixings, double p0, double p_decay, double iter_tl, bool is_last){
+static void solve_hard_fixing(Instance* inst, bool seqence_fixings, double p0, double p_decay, double iter_tl, bool is_last){
 	inst->sol_cost = INF_COST;
 	inst->start_time = get_time();
 	hard_fixing_parametrized(inst, seqence_fixings, p0, p_decay, iter_tl);
@@ -186,6 +186,46 @@ void perf_profile_tuning_hard_fixing(Instance* inst) {
 				}
 			}
 		}
+		printf("\n");
+	}
+	free_instance_data(inst);
+}
+
+static void solve_exact(Instance* inst, char* solver, bool posting, bool fcuts, bool warm, bool is_last) {
+	inst->sol_cost = INF_COST;
+	inst->solver = solver;
+	inst->bc_posting = posting;
+	inst->bc_fcuts = fcuts;
+	inst->bc_warm = warm;
+	inst->start_time = get_time();
+	if (solve_instance(inst) == -1) return;
+	double took = get_time() - inst->start_time;
+	debug(20, "Solver: %s, Time: %fs, Cost: %f\n", inst->solver, took, inst->sol_cost);
+	printf("%f", took);
+	if (!is_last) printf(", ");
+}
+
+void run_perf_profile_exact_method(Instance* inst) {
+	debug(10, "Running performance profile tuning\n");
+	init_instance_data(inst);
+	printf("9, benders, bc0_0_0, bc1_0_0, bc0_1_0, bc0_0_1, bc1_1_0, bc1_0_1, bc0_1_1, bc1_1_1\n"); 
+	int base_seed = inst->seed;
+	for(int i = base_seed; i < base_seed + 10; i++) {
+		debug(15, "Running with seed %d\n", i);
+		inst->seed = i;
+		random_inst_data(inst);
+		printf("Instance_%d, ", i-base_seed);
+
+		solve_exact(inst, "benders", 0, 0, 0, 0);
+		solve_exact(inst, "bc", 0, 0, 0, 0);
+		solve_exact(inst, "bc", 1, 0, 0, 0);
+		solve_exact(inst, "bc", 0, 1, 0, 0);
+		solve_exact(inst, "bc", 0, 0, 1, 0);
+		solve_exact(inst, "bc", 1, 1, 0, 0);
+		solve_exact(inst, "bc", 1, 0, 1, 0);
+		solve_exact(inst, "bc", 0, 1, 1, 0);
+		solve_exact(inst, "bc", 1, 1, 1, 1);
+		
 		printf("\n");
 	}
 	free_instance_data(inst);
