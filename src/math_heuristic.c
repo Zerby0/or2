@@ -12,6 +12,7 @@
 	fatal_error("CPLEX error in %s: %d\n", #what, error); \
 }
 
+// converts a feasible solution `xstar` to the tour representation
 void cplex_to_tour(const Instance* inst, const double* xstar, int* tour) {
 	int n = inst->num_nodes;
 	tour[0] = 0;
@@ -39,7 +40,7 @@ double edge_dist(const Instance* inst, int i, int j) {
 	return (get_cost(inst, a, c) + get_cost(inst, a, d) + get_cost(inst, b, c) + get_cost(inst, b, d)) / 4;
 }
 
-// fox edges independently one from the other
+// fix edges independently one from the other
 void fix_independent(const Instance* inst, double p, bool* fix) {
 	int n = inst->num_nodes;
 	for (int i = 0; i < n; i++)
@@ -193,6 +194,7 @@ void hard_fixing_parametrized(Instance *inst, bool seqence_fixings, double p0, d
 	close_cplex(&env, &lp);
 }
 
+// solves the instance heuristically using hard fixing
 void hard_fixing(Instance *inst) {
 	hard_fixing_parametrized(inst, true, 0.75, 0.985, 0.05);
 }

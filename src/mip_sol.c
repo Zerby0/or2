@@ -30,6 +30,7 @@ typedef struct {
 	fatal_error("CPLEX error in %s: %d\n", #what, error); \
 }
 
+// maps pairs (i, j) with i < j to a unique index 0..N*(N-1)/2 - 1
 int xpos(const Instance *inst, int i, int j) {
 	assert(i >= 0 && i < inst->num_nodes);
 	assert(j >= 0 && j < inst->num_nodes);
@@ -40,12 +41,12 @@ int xpos(const Instance *inst, int i, int j) {
 		i = j;
 		j = temp;
 	}
-	// maps pairs (i, j) with i < j to a unique index 0..N*(N-1)/2 - 1
 	// for row i, we skip (i+1)*(i+2)/2 elements from previous rows full of unused pairs (k, l) where k < i
 	// then within row i, the element is j
 	return i * inst->num_nodes - ((i+1) * (i+2))/2 + j;
 }
 
+// saves problem description to disk if the user requested it
 void write_problem(const Instance *inst, CPXENVptr env, CPXLPptr lp) {
 	int error;
 	if (inst->write_prob != NULL) {
@@ -55,6 +56,7 @@ void write_problem(const Instance *inst, CPXENVptr env, CPXLPptr lp) {
 	}
 }
 
+// build the base model for the problem wihtout any SECs
 void build_base_model(const Instance *inst, CPXENVptr env, CPXLPptr lp) {
 	int n = inst->num_nodes;
 
@@ -103,6 +105,7 @@ void build_base_model(const Instance *inst, CPXENVptr env, CPXLPptr lp) {
 	write_problem(inst, env, lp);
 }
 
+// finds all cycles in the integer feasible solution `xstar` and stores them in `cycles`
 void find_cycles(const Instance *inst, const double *xstar, Cycles* cycles) {
 	int nnodes = inst->num_nodes;
 	int* succ = cycles->succ;
@@ -148,6 +151,7 @@ void find_cycles(const Instance *inst, const double *xstar, Cycles* cycles) {
 	}
 }
 
+// allocates heap memory for the SEC data structure
 void sec_alloc(const Instance* inst, SecData* s) {
 	s->maxrows = inst->num_nodes;
 	s->maxcols = 2 * inst->num_cols; // sometimes fractional cuts produce more addends then `ncols`
@@ -169,6 +173,7 @@ void sec_alloc(const Instance* inst, SecData* s) {
 	}
 }
 
+// frees heap memory for the SEC data structure
 void sec_free(const Instance* inst, SecData* s) {
 	int maxrows = inst->num_nodes;
 	free(s->rmatbeg);
@@ -186,6 +191,7 @@ void sec_free(const Instance* inst, SecData* s) {
 	}
 }
 
+// uses cycles information to generate all the SEC constraints, saves them in `s`
 void sec_generate(const Instance *inst, const Cycles* cycles, SecData* s) {
 	int error;
 	int n = inst->num_nodes;
@@ -220,6 +226,7 @@ void sec_generate(const Instance *inst, const Cycles* cycles, SecData* s) {
 	}
 }
 
+// uses cycles information to generate & add all SEC constraints to the problem
 void add_sec_constraints(const Instance *inst, CPXENVptr env, CPXLPptr lp, const Cycles* cycles) {
 	int error;
 	SecData s;
@@ -271,6 +278,7 @@ void tour_to_cplex(const Instance *inst, const int* tour, int* ind, double* x) {
 	}
 }
 
+// inverts a cycle in the tour starting at `start`
 void invert_cycle(const Instance* inst, int *succ, int start) {
 	int n = inst->num_nodes;
     int prev = start;
@@ -289,19 +297,17 @@ void invert_cycle(const Instance* inst, int *succ, int start) {
 	succ[first] = prev;
 }
 
+// computes the extra milage for merging cycles at (i,j)
 double get_delta1(const Instance *inst, int i, int j, int *succ) {
-	double delta1 = (get_cost(inst, i, j) + get_cost(inst, succ[i], succ[j])) 
+	return (get_cost(inst, i, j) + get_cost(inst, succ[i], succ[j])) 
 		- (get_cost(inst, i, succ[i]) + get_cost(inst, j, succ[j]));
-	return delta1;
 }
-
 double get_delta2(const Instance *inst, int i, int j, int *succ) {
-	double delta2 = (get_cost(inst, i, succ[j]) + get_cost(inst, j, succ[i]))
+	return (get_cost(inst, i, succ[j]) + get_cost(inst, j, succ[i]))
 		- (get_cost(inst, succ[i], i) + get_cost(inst, j, succ[j]));
-	return delta2;
 }
 
-// modifies `cycles` to only have a single compoent
+// patches solution in `cycles` in place to only have a single compoent
 double patch_heuristic(Instance *inst, Cycles *cycles) {
 	if (cycles->ncomp <= 1) return -1;
 	double start = get_time();
@@ -366,6 +372,7 @@ double patch_heuristic(Instance *inst, Cycles *cycles) {
 	return objval;
 }
 
+// uses cycles information to generate all SEC constraints and reject the candidate solution
 void callback_sec(const Instance* inst, CPXCALLBACKCONTEXTptr context, const Cycles* cycles) {
 	int error;
 	SecData s;
@@ -375,6 +382,7 @@ void callback_sec(const Instance* inst, CPXCALLBACKCONTEXTptr context, const Cyc
 	sec_free(inst, &s);
 }
 
+// uses cycles information to patch the solution and post it to CPLEX
 void callback_posting(Instance* inst, CPXCALLBACKCONTEXTptr context, Cycles* cycles) {
 	if (!inst->bc_posting) return;
 	int n = inst->num_nodes, ncols = inst->num_cols;
@@ -392,6 +400,7 @@ void callback_posting(Instance* inst, CPXCALLBACKCONTEXTptr context, Cycles* cyc
 	free(xheu);
 }
 
+// callback at every incumbent candidate solution
 void candidate_callback(Instance* inst, CPXCALLBACKCONTEXTptr context) {
 	int n = inst->num_nodes, ncols = inst->num_cols;
 	int error;
@@ -404,11 +413,12 @@ void candidate_callback(Instance* inst, CPXCALLBACKCONTEXTptr context) {
 	free(xstar);
 	debug(90, "Found %d component(s) in callback\n", cycles.ncomp);
 	if (cycles.ncomp > 1) {
-		callback_sec(inst, context, &cycles);
 		callback_posting(inst, context, &cycles);
+		callback_sec(inst, context, &cycles);
 	}
 }
 
+// build the residual graph from the fractional solution `xstar` and store it in `elist` & `ecost`
 int build_residual_graph(const Instance* inst, const double* xstar, int* elist, double* ecost) {
 	int n = inst->num_nodes;
 	int ecount = 0;
@@ -424,6 +434,7 @@ int build_residual_graph(const Instance* inst, const double* xstar, int* elist, 
 	return ecount;
 }
 
+// adds a SEC constraint for the component `comp` to the SEC data structure `s`
 void add_sec_for_component(const Instance* inst, SecData* s, int compcount, const int* comp) {
 	int n = inst->num_nodes;
 	int row = s->rcnt;
@@ -454,6 +465,7 @@ void add_sec_for_component(const Instance* inst, SecData* s, int compcount, cons
 		sprintf(s->rowname[0], "SEC_comp%d_size%d", compcount, compcount);
 }
 
+// callback when the flow algo finds a violated cut
 int flow_callback(double cut_value, int compsize, int* comp, void* handle) {
 	void** handle_arr = (void**) handle;
 	const Instance* inst = (const Instance*) handle_arr[0];
@@ -463,6 +475,7 @@ int flow_callback(double cut_value, int compsize, int* comp, void* handle) {
 	return 0;
 }
 
+// CPLEX callback at every relaxation point
 void relaxation_callback(Instance* inst, CPXCALLBACKCONTEXTptr context) {
 	int error;
 	int depth;
@@ -508,6 +521,7 @@ void relaxation_callback(Instance* inst, CPXCALLBACKCONTEXTptr context) {
 	free(xstar);
 }
 
+// installed CPLEX callback, calls the right procedure depending on the context
 static int cplex_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void *userhandle) {
 	Instance *inst = (Instance*) userhandle;
 	if (contextid == CPX_CALLBACKCONTEXT_CANDIDATE) candidate_callback(inst, context);
@@ -516,6 +530,7 @@ static int cplex_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void
 	return 0;
 }
 
+// adds the instane incumbent as a warm start to CPLEX; first generates a solution if there is not one yet
 void mip_warm_start(Instance* inst, CPXENVptr env, CPXLPptr lp) {
 	if (inst->sol_cost == INF_COST) {
 		if (!inst->bc_warm) return;
@@ -538,6 +553,7 @@ void mip_warm_start(Instance* inst, CPXENVptr env, CPXLPptr lp) {
 	free(x);
 }
 
+// opens cplex, creates an empty problem, setups some common parameters
 void open_cplex(const Instance* inst, CPXENVptr* env, CPXLPptr* lp) {
 	int error = 0;
 	int n = inst->num_nodes;
@@ -557,12 +573,13 @@ void open_cplex(const Instance* inst, CPXENVptr* env, CPXLPptr* lp) {
 	if (inst->time_limit > 0)
 		CPXsetdblparam(*env, CPX_PARAM_TILIM, get_remaining_time(inst));
 
-	*lp = CPXcreateprob(*env, &error, "TSP_Benders");
+	*lp = CPXcreateprob(*env, &error, "TSP");
 	if (*lp == NULL) {
 		fatal_error("Failed to create CPLEX problem.\n");
 	}
 }
 
+// installs our callbacks to CPLEX
 void install_cplex_callbacks(Instance* inst, CPXENVptr env, CPXLPptr lp) {
 	int error;
 	CPXLONG contextid = CPX_CALLBACKCONTEXT_CANDIDATE;
@@ -571,11 +588,13 @@ void install_cplex_callbacks(Instance* inst, CPXENVptr env, CPXLPptr lp) {
 
 }
 
+// frees CPLEX resources
 void close_cplex(CPXENVptr* env, CPXLPptr* lp) {
 	if (*lp != NULL) CPXfreeprob(*env, lp);
 	if (*env != NULL) CPXcloseCPLEX(env);
 }
 
+// solves the instance to optimality using the Benders loop method
 void benders_method(Instance *inst) {
 	int n = inst->num_nodes;
 	int error;
@@ -651,6 +670,7 @@ void benders_method(Instance *inst) {
 	free(xstar);
 }
 
+// solves the instance to optimality using the branch and cut method
 void branch_and_cut(Instance* inst) {
 	int n = inst->num_nodes;
 	int error;
