@@ -160,7 +160,7 @@ static void solve_hard_fixing(Instance* inst, bool seqence_fixings, double p0, d
 	inst->start_time = get_time();
 	hard_fixing_parametrized(inst, seqence_fixings, p0, p_decay, iter_tl);
 	double took = get_time() - inst->start_time;
-	debug(20, "Solver: hard_fixing_%f_%f_%f, Time: %fs, Cost: %f\n", p0, p_decay, seqence_fixings ? 1 : 0, took, inst->sol_cost);
+	debug(20, "Solver: hard_fixing_%f_%f, Time: %fs, Cost: %f\n", p0, p_decay, took, inst->sol_cost);
 	printf("%f", inst->sol_cost);
 	if (!is_last) printf(", ");
 }
@@ -168,7 +168,7 @@ static void solve_hard_fixing(Instance* inst, bool seqence_fixings, double p0, d
 void perf_profile_tuning_hard_fixing(Instance* inst) {
 	debug(10, "Running performance profile tuning\n");
 	init_instance_data(inst);
-	printf("11, hard_fixing_0.75_0.985, hard_fixing_0.8_0.98, hard_fixing_0.85_0.975, hard_fixing_0.9_0.97, hard_fixing_0.95_0.965, hard_fixing_0.8_0.99, hard_fixing_0.85_0.99, hard_fixing_0.9_0.99, hard_fixing_0.95_0.99\n");
+	printf("18, hard_fixing_0, hard_fixing_1, hard_fixing_2, hard_fixing_3, hard_fixing_4, hard_fixing_5, hard_fixing_6, hard_fixing_7, hard_fixing_8, hard_fixing_9, hard_fixing_10, hard_fixing_12, hard_fixing_13, hard_fixing_14, hard_fixing_15, hard_fixing_16, hard_fixing_17\n");
 	int base_seed = inst->seed;
 	double p0[3] = {0.5,0.6,0.7};
 	double dk[3] = {0.95, 0.97, 0.985};
@@ -232,8 +232,8 @@ void run_perf_profile_exact_method(Instance* inst) {
 }
 
 void run_perf_profile_tuning(Instance* inst){
-	perf_profile_tuning_vns(inst);
-	perf_profile_tuning_tabu(inst);
-	perf_profile_tuning_grasp(inst);
+	//perf_profile_tuning_vns(inst);
+	//perf_profile_tuning_tabu(inst);
+	//perf_profile_tuning_grasp(inst);
 	perf_profile_tuning_hard_fixing(inst);
 }

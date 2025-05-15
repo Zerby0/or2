@@ -198,3 +198,109 @@ void hard_fixing_parametrized(Instance *inst, bool seqence_fixings, double p0, d
 void hard_fixing(Instance *inst) {
 	hard_fixing_parametrized(inst, true, 0.75, 0.985, 0.05);
 }
+
+void local_branching_parametrized(Instance *inst, int k0, double k_decay, double k_grow, double iter_tl){
+    if (inst->time_limit == 0) {
+		fatal_error("hard fixing called without a time limit");
+	}
+	// seed a solution using an heuristic
+    double total_tl = inst->time_limit;
+    inst->time_limit *= 0.15;
+    inst->verbose -= 10;
+    tabu_search(inst);
+    inst->time_limit = total_tl;
+    inst->verbose += 10;
+
+    // setup Cplex
+	int n = inst->num_nodes;
+	int error;
+    CPXENVptr env = NULL;
+    CPXLPptr lp = NULL;
+    open_cplex(inst, &env, &lp);
+    build_base_model(inst, env, lp);
+	int num_cols = inst->num_cols = CPXgetnumcols(env, lp);
+    install_cplex_callbacks(inst, env, lp);
+    mip_warm_start(inst, env, lp);  // will use the tabu search result
+	update_sol(inst, inst->sol, inst->sol_cost);
+
+	// copy the heuristic solution
+	int *heuristic_sol = malloc(n * sizeof(int));
+    for (int i = 0; i < n; ++i)
+        heuristic_sol[i] = inst->sol[i];
+    inst_init_plot(inst);
+    inst_plot_cost(inst, inst->sol_cost);
+
+    // local branching loop
+    int k = k0;
+    int iteration = 0;
+    double remaining;
+    char sense = 'G'; // G >=
+    double rhs;
+    int *indices = malloc(num_cols * sizeof(int));
+    double *coefs = malloc(num_cols * sizeof(double));
+	double *xstar = malloc(num_cols * sizeof(double));
+	int izero = 0;
+
+    while (!is_out_of_time(inst)) {
+        iteration++;
+		// build the local branching constraint
+        rhs = (double)(n - k);
+        for (int i = 0; i < n; ++i) {
+            int a = heuristic_sol[i];
+            int b = heuristic_sol[(i + 1) % n];
+            int h = xpos(inst, a, b);
+            indices[i] = h;
+            coefs[i]   = 1.0;
+        }
+
+        // add the local branching constraint
+       	_c(CPXaddrows(env, lp, 0, 1, n, &rhs, &sense, &izero, indices, coefs, NULL, NULL));
+
+        // solve the problem
+		_c(CPXsetdblparam(env, CPX_PARAM_TILIM, min(inst->time_limit * iter_tl, get_remaining_time(inst))));
+		double start = get_time();
+		_c(CPXmipopt(env, lp));
+		double elapsed = get_time() - start;
+		int status;
+		double cost;
+		_c(CPXsolution(env, lp, &status, &cost, xstar, NULL, NULL, NULL));
+		bool timeout = false;
+		if (status == CPXMIP_TIME_LIM_FEAS || status == CPXMIP_TIME_LIM_INFEAS) {
+			timeout = true;
+		} else if (!(status == CPXMIP_OPTIMAL || status == CPXMIP_OPTIMAL_TOL)) {
+			fatal_error("MIP optimization failed with status %d\n", status);
+		}
+		inst_plot_cost(inst, cost);
+
+		// check the new solution
+		bool improved = (cost < inst->sol_cost);
+		int tour[n];
+		cplex_to_tour(inst, xstar, tour);
+        if (improved) {
+            update_sol(inst, tour, cost);
+            k = max(1, (int)round(k * k_decay));
+        } else {
+            k = min(n-1, (int)round(k * k_grow));
+        }
+		if (inst->verbose >= 90) 
+			plot_solution(inst, tour);
+
+        debug(30, "LB iter %d: k=%d, time=%5.2f%s, cost=%f%s\n", iteration, k, elapsed, timeout ? "*" : " ", inst->sol_cost, improved ? "*" : " ");
+
+		// remove the local branching constraint
+        int lastrow = CPXgetnumrows(env, lp) - 1;
+        _c(CPXdelrows(env, lp, lastrow, lastrow));
+    }
+
+    debug(20, "Local branching run for %d iterations\n", iteration);
+
+    free(indices);
+    free(coefs);
+	free(xstar);
+	free(heuristic_sol);
+    close_cplex(&env, &lp);
+}
+
+void local_branching(Instance *inst) {
+    local_branching_parametrized(inst, 20, 0.8, 1.3, 0.001);
+}

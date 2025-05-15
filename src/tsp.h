@@ -113,6 +113,8 @@ void benders_method(Instance* inst);
 void branch_and_cut(Instance* inst);
 void hard_fixing(Instance* inst);
 void hard_fixing_parametrized(Instance *inst, bool seqence_fixings, double p0, double p_decay, double iter_tl);
+void local_branching(Instance *inst);
+void local_branching_parametrized(Instance *inst, int k0, double k_decay, double k_grow, double iter_tl);
 
 void run_perf_profile(Instance* inst);
 void run_perf_profile_tuning(Instance* inst);

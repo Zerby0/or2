@@ -359,8 +359,6 @@ double patch_heuristic(Instance *inst, Cycles *cycles) {
 			}
 		}
 		cycles->ncomp--;
-
-        // TODO: check if the `cycle` structure is still consistent
 	}
 	
 	// reconstruct the tour
