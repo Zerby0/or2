@@ -114,7 +114,7 @@ void branch_and_cut(Instance* inst);
 void hard_fixing(Instance* inst);
 void hard_fixing_parametrized(Instance *inst, bool seqence_fixings, double p0, double p_decay, double iter_tl);
 void local_branching(Instance *inst);
-void local_branching_parametrized(Instance *inst, int k0, double k_decay, double k_grow, double iter_tl);
+void local_branching_parametrized(Instance *inst, int k0, double k_grow, double iter_tl, double iter_nl);
 
 void run_perf_profile(Instance* inst);
 void run_perf_profile_tuning(Instance* inst);
@@ -128,6 +128,7 @@ void close_cplex(CPXENVptr* env, CPXLPptr* lp);
 void build_base_model(const Instance *inst, CPXENVptr env, CPXLPptr lp);
 void install_cplex_callbacks(Instance* inst, CPXENVptr env, CPXLPptr lp);
 void mip_warm_start(Instance* inst, CPXENVptr env, CPXLPptr lp);
+void write_problem(const Instance *inst, CPXENVptr env, CPXLPptr lp);
 
 
 // utility macros

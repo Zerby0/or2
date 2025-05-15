@@ -30,7 +30,7 @@ typedef struct {
 	fatal_error("CPLEX error in %s: %d\n", #what, error); \
 }
 
-// maps pairs (i, j) with i < j to a unique index 0..N*(N-1)/2 - 1
+// maps pairs (i, j) to a unique variable index index 0..N*(N-1)/2
 int xpos(const Instance *inst, int i, int j) {
 	assert(i >= 0 && i < inst->num_nodes);
 	assert(j >= 0 && j < inst->num_nodes);
@@ -71,7 +71,7 @@ void build_base_model(const Instance *inst, CPXENVptr env, CPXLPptr lp) {
 	// create variables
 	for (int i = 0; i < n; i++) {
 		for (int j = i + 1; j < n; j++) {
-			sprintf(varname, "x(%d,%d)", i + 1, j + 1); // start names from 1
+			sprintf(varname, "x(%d,%d)", i, j); // start names from 1
 			double cost = get_cost(inst, i, j);
 			double lb = 0.0, ub = 1.0;
 			char* cname[1] = {varname};
@@ -91,7 +91,7 @@ void build_base_model(const Instance *inst, CPXENVptr env, CPXLPptr lp) {
 	sense_equal = 'E';
 	rhs = 2.0;
 	for (int i = 0; i < n; i++) {
-		sprintf(constrname, "degree(%d)", i + 1); // start names from 1
+		sprintf(constrname, "degree(%d)", i); // start names from 1
 		int nnz = 0;
 		for (int j = 0; j < n; j++) {
 			if (i == j) continue;
@@ -411,8 +411,8 @@ void candidate_callback(Instance* inst, CPXCALLBACKCONTEXTptr context) {
 	free(xstar);
 	debug(90, "Found %d component(s) in callback\n", cycles.ncomp);
 	if (cycles.ncomp > 1) {
-		callback_posting(inst, context, &cycles);
 		callback_sec(inst, context, &cycles);
+		callback_posting(inst, context, &cycles); // after SEC since this modifies `cycles`
 	}
 }
 
