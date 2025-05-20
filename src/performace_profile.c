@@ -155,10 +155,10 @@ void perf_profile_tuning_vns(Instance* inst) {
 	free_instance_data(inst);
 }
 
-static void solve_hard_fixing(Instance* inst, bool seqence_fixings, double p0, double p_decay, double iter_tl, bool is_last){
+static void solve_hard_fixing(Instance* inst, bool seqence_fixings, double p0, double p_decay, double iter_nl, bool is_last){
 	inst->sol_cost = INF_COST;
 	inst->start_time = get_time();
-	hard_fixing_parametrized(inst, seqence_fixings, p0, p_decay, iter_tl);
+	hard_fixing_parametrized(inst, seqence_fixings, p0, p_decay, 0.1, iter_nl);
 	double took = get_time() - inst->start_time;
 	debug(20, "Solver: hard_fixing_%f_%f, Time: %fs, Cost: %f\n", p0, p_decay, took, inst->sol_cost);
 	printf("%f", inst->sol_cost);
@@ -172,7 +172,7 @@ void perf_profile_tuning_hard_fixing(Instance* inst) {
 	int base_seed = inst->seed;
 	double p0[3] = {0.5,0.6,0.7};
 	double dk[3] = {0.95, 0.97, 0.985};
-	double iter_tl[2] = {0.05, 0.10};
+	double iter_nl[2] = {0.1, 2};
 	for(int i = base_seed; i < base_seed + 10; i++) {
 		debug(15, "Running with seed %d\n", i);
 		inst->seed = i;
@@ -182,7 +182,7 @@ void perf_profile_tuning_hard_fixing(Instance* inst) {
 			for (int k = 0; k < 3; k++) {
 				for (int l = 0; l < 2; l++) {
 					bool is_last = (j == 2 && k == 2 && l == 1);
-					solve_hard_fixing(inst, true, p0[j], dk[k], iter_tl[l], is_last);
+					solve_hard_fixing(inst, true, p0[j], dk[k], iter_nl[l], is_last);
 				}
 			}
 		}

@@ -87,7 +87,7 @@ void fix_hole(const Instance* inst, double p, bool* fix) {
   * p_decay: decay factor for the probability of fixing an edge
   * iter_tl: time limit for each iteration of the fixing loop, realtive to totale time limit
   */
-void hard_fixing_parametrized(Instance *inst, bool seqence_fixings, double p0, double p_decay, double iter_tl) {
+void hard_fixing_parametrized(Instance *inst, bool seqence_fixings, double p0, double p_decay, double iter_tl, double iter_nl) {
 	if (inst->time_limit == 0) {
 		fatal_error("hard fixing called without a time limit");
 	}
@@ -152,6 +152,7 @@ void hard_fixing_parametrized(Instance *inst, bool seqence_fixings, double p0, d
 
 		// solve the problem
 		_c(CPXsetdblparam(env, CPX_PARAM_TILIM, min(inst->time_limit * iter_tl, get_remaining_time(inst))));
+		_c(CPXsetlongparam(env, CPX_PARAM_NODELIM, (long)round(n * iter_tl / p)));
 		double start = get_time();
 		_c(CPXmipopt(env, lp));
 		double elapsed = get_time() - start;
@@ -159,9 +160,11 @@ void hard_fixing_parametrized(Instance *inst, bool seqence_fixings, double p0, d
 		double* xstar = buf_d;
 		double cost;
 		_c(CPXsolution(env, lp, &status, &cost, xstar, NULL, NULL, NULL));
-		bool timeout = false;
-		if (status == CPXMIP_TIME_LIM_FEAS || status == CPXMIP_TIME_LIM_INFEAS) {
-			timeout = true;
+		char timeout = 0;
+		if (status == CPXMIP_TIME_LIM_FEAS) {
+			timeout = '*';
+		} else if (status == CPXMIP_NODE_LIM_FEAS) {
+			timeout = '+';
 		} else if (!(status == CPXMIP_OPTIMAL || status == CPXMIP_OPTIMAL_TOL)) {
 			fatal_error("MIP optimization failed with status %d\n", status);
 		}
@@ -175,14 +178,14 @@ void hard_fixing_parametrized(Instance *inst, bool seqence_fixings, double p0, d
 			plot_solution(inst, tour);
 		update_sol(inst, tour, cost);
 
-		debug(30, "iter = %d, \tp = %f, \ttime = %f%c, \tcost = %f%c\n", iteration, p, elapsed, timeout ? '*' : 's', cost, improved ? '*' : ' ');
+		debug(30, "iter = %d, \tp = %f, \ttime = %f%c, \tcost = %f%c\n", iteration, p, elapsed, timeout ? timeout : 's', cost, improved ? '*' : ' ');
 
 		// update p
 		p = p * p_decay;
 		if (improved) p = 1 - (1 - p) * pow(p_decay, 5);
 		else p *= pow(p_decay, 1.5);
-		if (timeout) p = 1 - (1 - p) * pow(p_decay, 3);
-		else p *= pow(p_decay, 0.3);
+		if (timeout == '*') p = 1 - (1 - p) * pow(p_decay, 3);
+		else if (!timeout) p *= pow(p_decay, 0.3);
 		p = clamp(p, 0.2, 0.9);
 	}
 
@@ -196,7 +199,33 @@ void hard_fixing_parametrized(Instance *inst, bool seqence_fixings, double p0, d
 
 // solves the instance heuristically using hard fixing
 void hard_fixing(Instance *inst) {
-	hard_fixing_parametrized(inst, true, 0.75, 0.985, 0.05);
+	hard_fixing_parametrized(inst, true, 0.75, 0.985, 0.10, 1);
+}
+
+void add_lb_contraint(const Instance* inst, CPXENVptr env, CPXLPptr lp, int k) {
+	int error;
+	int n = inst->num_nodes;
+	char sense = 'G'; // >=
+	double rhs = (double)(n - k);
+	int indices[n];
+	double coefs[n];
+	int rmatbeg = 0;
+	for (int i = 0; i < n; ++i) {
+		int a = inst->sol[i];
+		int b = inst->sol[(i + 1) % n];
+		int h = xpos(inst, a, b);
+		indices[i] = h;
+		coefs[i]   = 1.0;
+	}
+	char* rname[1] = {"local_branching"};
+	_c(CPXaddrows(env, lp, 0, 1, n, &rhs, &sense, &rmatbeg, indices, coefs, NULL, rname));
+	write_problem(inst, env, lp);
+}
+
+void remove_lb_contraint(const Instance* inst, CPXENVptr env, CPXLPptr lp) {
+	int error;
+	int lastrow = CPXgetnumrows(env, lp) - 1;
+	_c(CPXdelrows(env, lp, lastrow, lastrow));
 }
 
 void local_branching_parametrized(Instance *inst, int k0, double k_grow, double iter_tl, double iter_nl){
@@ -222,7 +251,6 @@ void local_branching_parametrized(Instance *inst, int k0, double k_grow, double 
 	inst->two_opt = true; // use two-opt during patching
     install_cplex_callbacks(inst, env, lp);
     mip_warm_start(inst, env, lp);  // will use the tabu search result
-	update_sol(inst, inst->sol, inst->sol_cost);
 
     inst_init_plot(inst);
     inst_plot_cost(inst, inst->sol_cost);
@@ -237,21 +265,7 @@ void local_branching_parametrized(Instance *inst, int k0, double k_grow, double 
         iteration++;
 
 		// add the local branching constraint
-		char sense = 'G'; // >=
-		double rhs = (double)(n - k);
-		int indices[n];
-		double coefs[n];
-		int rmatbeg = 0;
-        for (int i = 0; i < n; ++i) {
-            int a = inst->sol[i];
-            int b = inst->sol[(i + 1) % n];
-            int h = xpos(inst, a, b);
-            indices[i] = h;
-            coefs[i]   = 1.0;
-        }
-		char* rname[1] = {"local_branching"};
-       	_c(CPXaddrows(env, lp, 0, 1, n, &rhs, &sense, &rmatbeg, indices, coefs, NULL, rname));
-		write_problem(inst, env, lp);
+		add_lb_contraint(inst, env, lp, k);
 
         // solve the problem
 		_c(CPXsetdblparam(env, CPX_PARAM_TILIM, min(inst->time_limit * iter_tl, get_remaining_time(inst))));
@@ -273,7 +287,7 @@ void local_branching_parametrized(Instance *inst, int k0, double k_grow, double 
 		inst_plot_cost(inst, cost);
 
 		// check the new solution
-		bool improved = (cost < inst->sol_cost);
+		bool improved = cost < inst->sol_cost - EPS_COST;
 		int tour[n];
 		cplex_to_tour(inst, xstar, tour);
 		update_sol(inst, tour, cost);
@@ -283,8 +297,7 @@ void local_branching_parametrized(Instance *inst, int k0, double k_grow, double 
 		debug(30, "iter = %d, \tk = %d, \ttime = %f%c, \tcost = %f%c\n", iteration, k, elapsed, timeout, cost, improved ? '*' : ' ');
 
 		// remove the local branching constraint
-        int lastrow = CPXgetnumrows(env, lp) - 1;
-        _c(CPXdelrows(env, lp, lastrow, lastrow));
+		remove_lb_contraint(inst, env, lp);
 
 		// update k
         if (improved) { // reset growth of parameters
@@ -303,5 +316,5 @@ void local_branching_parametrized(Instance *inst, int k0, double k_grow, double 
 }
 
 void local_branching(Instance *inst) {
-    local_branching_parametrized(inst, 20, 0.3, 0.15, 1);
+    local_branching_parametrized(inst, 30, 0.3, INFINITY, 1);
 }
