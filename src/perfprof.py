@@ -19,7 +19,9 @@ dashes = ['-',  # solid line
 	'-',
 	'--']
 
-markers = ['+', 'x', 's', '^', 'o', 'd', '*', 'v', '<', '>', '1', '2', '3', '4', 'p']
+markers = ['+', 'x', 's', '^', 'o', 'd', '*', 'v', '<', '>', '1', '2', '3', '4', 'p',
+           'H', 'h', '8', '|', '_', '.', ',', 'P', 'X']
+
 colors = [
     'r', 'b', 'y', 'g', 'm', 'c', 'k',
     '#ff7f0e',  # orange
@@ -29,7 +31,16 @@ colors = [
     '#8c564b',  # brown
     '#e377c2',  # pink
     '#7f7f7f',  # gray
-    '#17becf'   # cyan
+    '#17becf',  # cyan
+    '#1f77b4',  # blue
+    '#aec7e8',  # light blue
+    '#98df8a',  # light green
+    '#ff9896',  # salmon
+    '#c5b0d5',  # lavender
+    '#c49c94',  # tan
+    '#f7b6d2',  # light pink
+    '#dbdb8d',  # yellow
+    '#9edae5'   # sky blue
 ]
 
 
@@ -126,7 +137,7 @@ def main():
 			
     #TODO: make it work with different scales (1.4 works for cost ratios)
 
-	plt.axis([1, 1.02, 0, 1])
+	plt.axis([1, 1.005, 0, 1])
 	plt.legend(loc='lower right')
 	if opt.plottitle is not None:
 		plt.title(opt.plottitle)
