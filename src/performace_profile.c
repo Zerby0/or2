@@ -191,6 +191,57 @@ void perf_profile_tuning_hard_fixing(Instance* inst) {
 	free_instance_data(inst);
 }
 
+void solve_local_branching(Instance* inst, int k0, double k_grow, double iter_tl, double iter_nl, bool is_last) {
+	inst->sol_cost = INF_COST;
+	inst->start_time = get_time();
+	local_branching_parametrized(inst, k0, k_grow, iter_tl, iter_nl);
+	double took = get_time() - inst->start_time;
+	debug(20, "Solver: local_branching_%d_%f_%f_%f, Time: %fs, Cost: %f\n", k0, k_grow, iter_tl, iter_nl, took, inst->sol_cost);
+	printf("%f", inst->sol_cost);
+	if (!is_last) printf(", ");
+}
+
+void perf_profile_tuning_local_branching(Instance* inst) {
+    debug(10, "Running performance profile tuning\n");
+    init_instance_data(inst);
+    printf("16, lb_0, lb_1, lb_2, lb_3, lb_4, lb_5, lb_6, lb_7, lb_8, lb_9, lb_10, lb_11, lb_12, lb_13, lb_14, lb_15\n");
+    int base_seed = inst->seed;
+
+    int   k0_vals[2] = {50, 100};
+    double k_grow_vals[2] = {0.2, 0.4};
+    double iter_tl_vals[2] = {0.15, 0.3};
+    double iter_nl_vals[2] = {0.3, 0.6};
+
+    for (int i = base_seed; i < base_seed + 10; i++) {
+        debug(15, "Running with seed %d\n", i);
+        inst->seed = i;
+        random_inst_data(inst);
+        printf("Instance_%d, ", i - base_seed);
+
+        int config_idx = 0;
+        for (int a = 0; a < 2; a++) {
+            int k0 = k0_vals[a];
+            for (int b = 0; b < 2; b++) {
+                double k_grow = k_grow_vals[b];
+                for (int c = 0; c < 2; c++) {
+                    double iter_tl = iter_tl_vals[c];
+                    for (int d = 0; d < 2; d++) {
+                        double iter_nl = iter_nl_vals[d];
+                        bool is_last = (config_idx == 15);
+                        solve_local_branching(inst, k0, k_grow, iter_tl, iter_nl, is_last);
+                        config_idx++;
+                    }
+                }
+            }
+        }
+
+        printf("\n");
+    }
+
+    free_instance_data(inst);
+}
+
+
 static void solve_exact(Instance* inst, char* solver, bool posting, bool fcuts, bool warm, bool is_last) {
 	inst->sol_cost = INF_COST;
 	inst->solver = solver;
@@ -235,5 +286,6 @@ void run_perf_profile_tuning(Instance* inst){
 	//perf_profile_tuning_vns(inst);
 	//perf_profile_tuning_tabu(inst);
 	//perf_profile_tuning_grasp(inst);
-	perf_profile_tuning_hard_fixing(inst);
+	//perf_profile_tuning_hard_fixing(inst);
+	perf_profile_tuning_local_branching(inst);
 }
