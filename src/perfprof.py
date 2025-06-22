@@ -137,7 +137,7 @@ def main():
 			
     #TODO: make it work with different scales (1.4 works for cost ratios)
 
-	plt.axis([1, 1.005, 0, 1])
+	plt.axis([1, 1.06, 0, 1])
 	plt.legend(loc='lower right')
 	if opt.plottitle is not None:
 		plt.title(opt.plottitle)
