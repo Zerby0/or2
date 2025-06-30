@@ -98,12 +98,12 @@ void variable_neigh_search_parametrized(Instance* inst, int k, bool incremental)
 
 		if (incremental) {
 			// update k
-			if (cost < prev_cost - EPS_COST) {
+			if (cost < prev_cost - EPS_COST) { // the kick found an improved neighborhood, exploit it
 				k = MIN_K;
-			} else if (cost > prev_cost + EPS_COST) {
-				k = min(MAX_K, k + 1);
-			} else {
+			} else if (cost > prev_cost + EPS_COST) { // worse (but different) local minima: exploit more
 				k = max(MIN_K, k - 1);
+			} else { // same local minima -> stagnation -> we must explore more
+				k = min(MAX_K, k + 1);
 			}
 		} 
 
