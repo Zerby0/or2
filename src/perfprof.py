@@ -12,37 +12,37 @@ from optparse import OptionParser
 # parameters
 defLW = 1.2  # default line width
 defMS = 7  # default marker size
-dashes = ['-',  # solid line
-	'--',  # dashed line
-	'-.',  # dash-dot line
-	':',  # dotted line
-	'-',
-	'--']
-
-markers = ['+', 'x', 's', '^', 'o', 'd', '*', 'v', '<', '>', '1', '2', '3', '4', 'p',
-           'H', 'h', '8', '|', '_', '.', ',', 'P', 'X']
-
-colors = [
-    'r', 'b', 'y', 'g', 'm', 'c', 'k',
-    '#ff7f0e',  # orange
-    '#2ca02c',  # green
-    '#d62728',  # red
-    '#9467bd',  # purple
-    '#8c564b',  # brown
-    '#e377c2',  # pink
-    '#7f7f7f',  # gray
-    '#17becf',  # cyan
-    '#1f77b4',  # blue
-    '#aec7e8',  # light blue
-    '#98df8a',  # light green
-    '#ff9896',  # salmon
-    '#c5b0d5',  # lavender
-    '#c49c94',  # tan
-    '#f7b6d2',  # light pink
-    '#dbdb8d',  # yellow
-    '#9edae5'   # sky blue
+dashes = [
+    '-',  # solid line
+    '--',  # dashed line
+    '-.',  # dash-dot line
+    ':',  # dotted line
+    (0, (1, 1)),        # densely dotted
+    (0, (5, 1)),        # loosely dotted
+    (0, (3, 5, 1, 5)),  # dash-dotted
+    (0, (3, 1, 1, 1)),  # custom dash-dot
+    (0, (5, 5)),        # long dashes
+    (0, (5, 2, 1, 2)),  # dash-space-dot
+    (0, (1, 5)),        # sparse dots
+    (0, (5, 1, 1, 1, 1, 1)),  # complex pattern
 ]
 
+# At least 24 distinct markers
+markers = [
+    'o', 'v', '^', '<', '>', 's', 'p', '*', '+', 'x',
+    'D', 'd', 'H', 'h', 'P', 'X', '1', '2', '3', '4',
+    '|', '_', '.', ',', '8'
+]
+# At least 24 distinct colors (Matplotlib names and hex)
+colors = [
+    'tab:blue', 'tab:orange', 'tab:green', 'tab:red',
+    'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray',
+    'tab:olive', 'tab:cyan',
+    '#e41a1c', '#377eb8', '#4daf4a', '#984ea3',
+    '#ff7f00', '#ffff33', '#a65628', '#f781bf',
+    '#999999', '#66c2a5', '#fc8d62', '#8da0cb',
+    '#e78ac3', '#a6d854', '#ffd92f'
+]
 
 
 class CmdLineParser(object):
@@ -117,6 +117,8 @@ def main():
 				ratio[i,j] = opt.maxratio + 1e6
 	# sort ratios
 	ratio.sort(axis=0)
+	plt.figure(figsize=(10, 6))  # <<< enlarged graph size
+
 	# plot first
 	y = np.arange(nrows, dtype=np.float64) / nrows
 	for j in range(ncols):
@@ -137,7 +139,7 @@ def main():
 			
     #TODO: make it work with different scales (1.4 works for cost ratios)
 
-	plt.axis([1, 1.06, 0, 1])
+	plt.axis([1, 6, 0, 1])
 	plt.legend(loc='lower right')
 	if opt.plottitle is not None:
 		plt.title(opt.plottitle)

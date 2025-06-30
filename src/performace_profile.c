@@ -242,12 +242,13 @@ void perf_profile_tuning_local_branching(Instance* inst) {
 }
 
 
-static void solve_exact(Instance* inst, char* solver, bool posting, bool fcuts, bool warm, bool is_last) {
+static void solve_exact(Instance* inst, char* solver, bool posting, bool fcuts, bool warm, double theta, bool is_last) {
 	inst->sol_cost = INF_COST;
 	inst->solver = solver;
 	inst->bc_posting = posting;
 	inst->bc_fcuts = fcuts;
 	inst->bc_warm = warm;
+	inst->bc_theta = theta; // Default value for theta, can be adjusted later
 	inst->start_time = get_time();
 	if (solve_instance(inst) == -1) return;
 	double took = get_time() - inst->start_time;
@@ -267,15 +268,30 @@ void run_perf_profile_exact_method(Instance* inst) {
 		random_inst_data(inst);
 		printf("Instance_%d, ", i-base_seed);
 
-		solve_exact(inst, "benders", 0, 0, 0, 0);
-		solve_exact(inst, "bc", 0, 0, 0, 0);
-		solve_exact(inst, "bc", 1, 0, 0, 0);
-		solve_exact(inst, "bc", 0, 1, 0, 0);
-		solve_exact(inst, "bc", 0, 0, 1, 0);
-		solve_exact(inst, "bc", 1, 1, 0, 0);
-		solve_exact(inst, "bc", 1, 0, 1, 0);
-		solve_exact(inst, "bc", 0, 1, 1, 0);
-		solve_exact(inst, "bc", 1, 1, 1, 1);
+        for (int i = 0; i < 2; i++) {
+			for (int j = 0; j < 2; j++) {
+				for (int k = 0; k < 2; k++) {
+					solve_exact(inst, "bc", i, j, k, 0.01, 0);
+				}
+			}
+		}
+		
+		for (int i = 0; i < 2; i++) {
+			for (int j = 0; j < 2; j++) {
+				for (int k = 0; k < 2; k++) {
+					solve_exact(inst, "bc", i, j, k, 0.1, 0);
+				}
+			}
+		}
+
+		for (int i = 0; i < 2; i++) {
+			for (int j = 0; j < 2; j++) {
+				for (int k = 0; k < 2; k++) {
+					bool is_last = (i == 1 && j == 1 && k == 1);
+					solve_exact(inst, "bc", i, j, k, 1, is_last);
+				}
+			}
+		}
 		
 		printf("\n");
 	}
@@ -287,5 +303,6 @@ void run_perf_profile_tuning(Instance* inst){
 	//perf_profile_tuning_tabu(inst);
 	//perf_profile_tuning_grasp(inst);
 	//perf_profile_tuning_hard_fixing(inst);
-	perf_profile_tuning_local_branching(inst);
+	//perf_profile_tuning_local_branching(inst);
+	run_perf_profile_exact_method(inst);
 }
