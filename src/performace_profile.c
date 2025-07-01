@@ -160,7 +160,7 @@ static void solve_hard_fixing(Instance* inst, bool seqence_fixings, double p0, d
 	inst->start_time = get_time();
 	hard_fixing_parametrized(inst, seqence_fixings, p0, p_decay, 0.1, iter_nl);
 	double took = get_time() - inst->start_time;
-	debug(20, "Solver: hard_fixing_%f_%f, Time: %fs, Cost: %f\n", p0, p_decay, took, inst->sol_cost);
+	debug(20, "Solver: hard_fixing_%d_%f_%f, Time: %fs, Cost: %f\n", (int)seqence_fixings, p0, p_decay, took, inst->sol_cost);
 	printf("%f", inst->sol_cost);
 	if (!is_last) printf(", ");
 }
@@ -317,6 +317,25 @@ void run_benders_vs_bc(Instance* inst) {
 	free_instance_data(inst);
 }
 
+void perf_profile_hf_sequence(Instance* inst) {
+	debug(10, "Running Benders vs Branch & Cut\n");
+	init_instance_data(inst);
+	printf("2, hf_random, hf_sequence\n");
+	int base_seed = inst->seed;
+	for(int i = base_seed; i < base_seed + 10; i++) {
+		debug(15, "Running with seed %d\n", i);
+		inst->seed = i;
+		random_inst_data(inst);
+		printf("Instance_%d, ", i-base_seed);
+
+		solve_hard_fixing(inst, false, 0.75, 0.985, 0.10, 0);
+		solve_hard_fixing(inst, true, 0.75, 0.985, 0.10, 1);
+
+		printf("\n");
+	}
+	free_instance_data(inst);
+}
+
 void run_perf_profile_tuning(Instance* inst){
 	//perf_profile_tuning_vns(inst);
 	//perf_profile_tuning_tabu(inst);
@@ -324,5 +343,6 @@ void run_perf_profile_tuning(Instance* inst){
 	//perf_profile_tuning_hard_fixing(inst);
 	//perf_profile_tuning_local_branching(inst);
 	//run_perf_profile_exact_method(inst);
-	run_benders_vs_bc(inst);
+	//run_benders_vs_bc(inst);
+	perf_profile_hf_sequence(inst);
 }
