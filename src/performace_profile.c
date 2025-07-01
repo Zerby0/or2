@@ -298,11 +298,31 @@ void run_perf_profile_exact_method(Instance* inst) {
 	free_instance_data(inst);
 }
 
+void run_benders_vs_bc(Instance* inst) {
+	debug(10, "Running Benders vs Branch & Cut\n");
+	init_instance_data(inst);
+	printf("2, benders, bc\n");
+	int base_seed = inst->seed;
+	for(int i = base_seed; i < base_seed + 10; i++) {
+		debug(15, "Running with seed %d\n", i);
+		inst->seed = i;
+		random_inst_data(inst);
+		printf("Instance_%d, ", i-base_seed);
+
+		solve_exact(inst, "benders", 0, 0, 0, 0, 0);
+		solve_exact(inst, "bc", 1, 1, 1, 0.01, 1);
+
+		printf("\n");
+	}
+	free_instance_data(inst);
+}
+
 void run_perf_profile_tuning(Instance* inst){
 	//perf_profile_tuning_vns(inst);
 	//perf_profile_tuning_tabu(inst);
 	//perf_profile_tuning_grasp(inst);
 	//perf_profile_tuning_hard_fixing(inst);
 	//perf_profile_tuning_local_branching(inst);
-	run_perf_profile_exact_method(inst);
+	//run_perf_profile_exact_method(inst);
+	run_benders_vs_bc(inst);
 }
